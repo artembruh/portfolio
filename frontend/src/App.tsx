@@ -1,10 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
 import Landing from './pages/Landing';
-
-function BlockchainExplorer() {
-  return <div className="text-muted-foreground">Blockchain Explorer — coming soon</div>;
-}
+import BlockchainExplorer from './pages/BlockchainExplorer';
 
 function App() {
   return (
