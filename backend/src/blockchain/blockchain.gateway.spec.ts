@@ -52,6 +52,7 @@ describe('BlockchainGateway', () => {
 
     // Reset per-adapter mocks
     mockEthAdapter.getLatestBlock.mockResolvedValue({ blockNumber: 12345, avgBlockTime: 12.1 });
+    mockEthAdapter.getTokenInfo.mockReset();
     mockEthAdapter.onBlock.mockReset();
     mockBaseAdapter.getLatestBlock.mockResolvedValue({ blockNumber: 99999, avgBlockTime: 2.0 });
     mockBaseAdapter.onBlock.mockReset();
@@ -140,17 +141,225 @@ describe('BlockchainGateway', () => {
 
       expect(mockClient.leave).not.toHaveBeenCalled();
     });
+
+    it('cleans up rateLimiter entry on disconnect', async () => {
+      // Set up adapter so lookup works
+      mockEthAdapter.getTokenInfo.mockResolvedValue({
+        name: 'Tether',
+        symbol: 'USDT',
+        decimals: 6,
+        totalSupply: '1000000',
+      });
+
+      // Perform a lookup to populate the rateLimiter
+      await gateway.handleTokenLookup(
+        { chain: 'ethereum', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7' },
+        mockClient as unknown as import('socket.io').Socket,
+      );
+
+      // Disconnect — rateLimiter entry should be removed
+      gateway.handleDisconnect(mockClient as unknown as import('socket.io').Socket);
+
+      expect((gateway as unknown as { rateLimiter: Map<string, number> }).rateLimiter.has(mockClient.id)).toBe(false);
+    });
   });
 
   describe('handleTokenLookup', () => {
-    it('emits trace with step 1 error status and not-implemented message (BACK-02d)', () => {
-      gateway.handleTokenLookup(mockClient as unknown as import('socket.io').Socket);
+    beforeEach(() => {
+      mockEthAdapter.getTokenInfo.mockResolvedValue({
+        name: 'Tether',
+        symbol: 'USDT',
+        decimals: 6,
+        totalSupply: '1000000',
+      });
+    });
+
+    it('emits 5 trace steps (in_progress + done) then token_result on valid lookup (BLKC-04)', async () => {
+      await gateway.handleTokenLookup(
+        { chain: 'ethereum', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7' },
+        mockClient as unknown as import('socket.io').Socket,
+      );
+
+      // Step 1
+      expect(mockClient.emit).toHaveBeenCalledWith('trace', {
+        step: 1,
+        status: 'in_progress',
+        message: expect.stringContaining('Looking up'),
+      });
+      expect(mockClient.emit).toHaveBeenCalledWith('trace', {
+        step: 1,
+        status: 'done',
+        message: expect.any(String),
+      });
+
+      // Step 2
+      expect(mockClient.emit).toHaveBeenCalledWith('trace', {
+        step: 2,
+        status: 'in_progress',
+        message: expect.stringContaining('Gathering'),
+      });
+      expect(mockClient.emit).toHaveBeenCalledWith('trace', {
+        step: 2,
+        status: 'done',
+        message: expect.any(String),
+      });
+
+      // Step 3
+      expect(mockClient.emit).toHaveBeenCalledWith('trace', {
+        step: 3,
+        status: 'in_progress',
+        message: expect.stringContaining('Decoding'),
+      });
+      expect(mockClient.emit).toHaveBeenCalledWith('trace', {
+        step: 3,
+        status: 'done',
+        message: expect.any(String),
+      });
+
+      // Step 4
+      expect(mockClient.emit).toHaveBeenCalledWith('trace', {
+        step: 4,
+        status: 'in_progress',
+        message: expect.stringContaining('Fetching supply'),
+      });
+      expect(mockClient.emit).toHaveBeenCalledWith('trace', {
+        step: 4,
+        status: 'done',
+        message: expect.any(String),
+      });
+
+      // Step 5
+      expect(mockClient.emit).toHaveBeenCalledWith('trace', {
+        step: 5,
+        status: 'in_progress',
+        message: expect.stringContaining('Fulfilling'),
+      });
+      expect(mockClient.emit).toHaveBeenCalledWith('trace', {
+        step: 5,
+        status: 'done',
+        message: expect.any(String),
+      });
+
+      // Final result — 11 total emits: 10 trace (5x2) + 1 token_result
+      expect(mockClient.emit).toHaveBeenCalledWith('token_result', {
+        name: 'Tether',
+        symbol: 'USDT',
+        decimals: 6,
+        totalSupply: '1000000',
+      });
+      expect(mockClient.emit).toHaveBeenCalledTimes(11);
+    });
+
+    it('emits error trace for missing chain (BLKC-05)', async () => {
+      await gateway.handleTokenLookup(
+        { address: '0xdAC17F958D2ee523a2206206994597C13D831ec7' },
+        mockClient as unknown as import('socket.io').Socket,
+      );
 
       expect(mockClient.emit).toHaveBeenCalledWith('trace', {
         step: 1,
         status: 'error',
-        message: expect.stringContaining('not yet implemented'),
+        message: expect.stringContaining('Missing'),
       });
+      expect(mockEthAdapter.getTokenInfo).not.toHaveBeenCalled();
+    });
+
+    it('emits error trace for missing address (BLKC-05)', async () => {
+      await gateway.handleTokenLookup(
+        { chain: 'ethereum' },
+        mockClient as unknown as import('socket.io').Socket,
+      );
+
+      expect(mockClient.emit).toHaveBeenCalledWith('trace', {
+        step: 1,
+        status: 'error',
+        message: expect.stringContaining('Missing'),
+      });
+      expect(mockEthAdapter.getTokenInfo).not.toHaveBeenCalled();
+    });
+
+    it('emits error trace for unsupported chain (BLKC-05)', async () => {
+      await gateway.handleTokenLookup(
+        { chain: 'dogecoin', address: '0x1234567890123456789012345678901234567890' },
+        mockClient as unknown as import('socket.io').Socket,
+      );
+
+      expect(mockClient.emit).toHaveBeenCalledWith('trace', {
+        step: 1,
+        status: 'error',
+        message: expect.stringContaining('Unsupported'),
+      });
+    });
+
+    it('stops trace on adapter error and emits error at step 2 (BLKC-06)', async () => {
+      mockEthAdapter.getTokenInfo.mockRejectedValueOnce(new Error('RPC timeout'));
+
+      await gateway.handleTokenLookup(
+        { chain: 'ethereum', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7' },
+        mockClient as unknown as import('socket.io').Socket,
+      );
+
+      // Step 2 error should be emitted
+      expect(mockClient.emit).toHaveBeenCalledWith('trace', {
+        step: 2,
+        status: 'error',
+        message: 'RPC timeout',
+      });
+
+      // token_result should NOT be emitted
+      expect(mockClient.emit).not.toHaveBeenCalledWith('token_result', expect.anything());
+
+      // No step 3, 4, 5 events after the error
+      const calls = mockClient.emit.mock.calls;
+      const step3OrLaterAfterError = calls.filter(
+        ([event, data]: [string, { step?: number }]) =>
+          event === 'trace' && typeof data?.step === 'number' && data.step >= 3,
+      );
+      expect(step3OrLaterAfterError).toHaveLength(0);
+    });
+
+    it('rejects second lookup within 5 seconds with rate limit error (BLKC-07)', async () => {
+      // First call — should succeed
+      await gateway.handleTokenLookup(
+        { chain: 'ethereum', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7' },
+        mockClient as unknown as import('socket.io').Socket,
+      );
+
+      mockClient.emit.mockClear();
+
+      // Second call immediately — should be rate limited
+      await gateway.handleTokenLookup(
+        { chain: 'ethereum', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7' },
+        mockClient as unknown as import('socket.io').Socket,
+      );
+
+      expect(mockClient.emit).toHaveBeenCalledWith('trace', {
+        step: 1,
+        status: 'error',
+        message: expect.stringContaining('Rate limited'),
+      });
+
+      // getTokenInfo only called once (for the first lookup)
+      expect(mockEthAdapter.getTokenInfo).toHaveBeenCalledTimes(1);
+    });
+
+    it('allows lookup after 5 seconds have elapsed (BLKC-07)', async () => {
+      // Directly manipulate the rateLimiter to simulate a lookup 6 seconds ago
+      const rateLimiter = (gateway as unknown as { rateLimiter: Map<string, number> }).rateLimiter;
+      rateLimiter.set(mockClient.id, Date.now() - 6000);
+
+      await gateway.handleTokenLookup(
+        { chain: 'ethereum', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7' },
+        mockClient as unknown as import('socket.io').Socket,
+      );
+
+      // Should succeed — no rate limit error
+      expect(mockClient.emit).not.toHaveBeenCalledWith('trace', {
+        step: 1,
+        status: 'error',
+        message: expect.stringContaining('Rate limited'),
+      });
+      expect(mockClient.emit).toHaveBeenCalledWith('token_result', expect.anything());
     });
   });
 
