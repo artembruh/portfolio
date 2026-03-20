@@ -2,19 +2,9 @@ import { JsonRpcProvider, WebSocketProvider, Contract } from 'ethers';
 import { BlockchainAdapter } from '../interfaces/blockchain-adapter.interface';
 import { BlockInfo } from '../dto/block-info.dto';
 import { TokenInfo } from '../dto/token-info.dto';
+import { withTimeout } from '../utils/with-timeout';
 
 const RPC_TIMEOUT_MS = 15_000;
-
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  let timer: ReturnType<typeof setTimeout>;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(
-      () => reject(new Error(`Timeout after ${ms}ms: ${label}`)),
-      ms,
-    );
-  });
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
-}
 
 const ERC20_ABI = [
   'function name() view returns (string)',
