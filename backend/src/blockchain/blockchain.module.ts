@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { BlockchainAdapter } from './interfaces/blockchain-adapter.interface';
 import { EvmAdapter } from './adapters/evm.adapter';
 import { BlockchainService } from './services/blockchain.service';
+import { BlockchainGateway } from './blockchain.gateway';
 
 @Module({
   providers: [
@@ -43,6 +44,7 @@ import { BlockchainService } from './services/blockchain.service';
       inject: [ConfigService],
     },
     BlockchainService,
+    BlockchainGateway,
   ],
   exports: [BlockchainService],
 })
