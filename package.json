@@ -6,7 +6,10 @@
   "author": "artembruh <artem.bsns@gmail.com>",
   "license": "MIT",
   "private": true,
-  "workspaces": ["frontend", "backend"],
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "engines": {
     "node": ">=22.0.0 <23.0.0",
     "yarn": "^1.22.0"
@@ -18,10 +21,11 @@
     "format:check": "prettier --check ."
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "eslint": "^10.1.0",
-    "typescript-eslint": "^8.57.1",
-    "prettier": "^3.8.1",
     "globals": "^15.0.0",
-    "typescript": "^5.9.3"
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.57.1"
   }
 }

@@ -43,4 +43,10 @@ export default tseslint.config(
     files: ['**/*.config.{js,mjs,ts}', 'eslint.config.mjs'],
     ...tseslint.configs.disableTypeChecked,
   },
+
+  // Test files outside tsconfig include — disable type-checked rules
+  {
+    files: ['**/test/**/*.ts', '**/*.e2e-spec.ts', '**/*.spec.ts'],
+    ...tseslint.configs.disableTypeChecked,
+  },
 );
