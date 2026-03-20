@@ -2,9 +2,26 @@
   "name": "portfolio",
   "version": "0.0.1",
   "description": "Portfolio project of Artem B.",
-  "main": "index.js",
   "repository": "git@github.com:artembruh/portfolio.git",
   "author": "artembruh <artem.bsns@gmail.com>",
   "license": "MIT",
-  "private": true
+  "private": true,
+  "workspaces": ["frontend", "backend"],
+  "engines": {
+    "node": ">=22.0.0 <23.0.0",
+    "yarn": "^1.22.0"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p frontend/tsconfig.json --noEmit && tsc -p backend/tsconfig.json --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "eslint": "^10.1.0",
+    "typescript-eslint": "^8.57.1",
+    "prettier": "^3.8.1",
+    "globals": "^15.0.0",
+    "typescript": "^5.9.3"
+  }
 }
