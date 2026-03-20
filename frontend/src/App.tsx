@@ -1,9 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
-
-function Landing() {
-  return <div className="text-muted-foreground">Landing page — coming soon</div>;
-}
+import Landing from './pages/Landing';
 
 function BlockchainExplorer() {
   return <div className="text-muted-foreground">Blockchain Explorer — coming soon</div>;
