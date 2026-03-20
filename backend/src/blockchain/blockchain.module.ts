@@ -54,8 +54,8 @@ export class BlockchainModule implements OnModuleDestroy {
 
   onModuleDestroy(): void {
     for (const adapter of this.adapters.values()) {
-      if ('destroy' in adapter && typeof adapter.destroy === 'function') {
-        adapter.destroy();
+      if ('destroy' in adapter && typeof (adapter as EvmAdapter).destroy === 'function') {
+        (adapter as EvmAdapter).destroy();
       }
     }
   }

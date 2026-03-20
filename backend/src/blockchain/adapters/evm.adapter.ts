@@ -40,16 +40,18 @@ export class EvmAdapter implements BlockchainAdapter {
 
   private startBlockSubscription(): void {
     try {
-      this.wsProvider.on('block', () => {
+      void this.wsProvider.on('block', () => {
         this.blockTimes.push(Date.now());
         if (this.blockTimes.length > 20) {
           this.blockTimes.shift();
         }
       });
-      this.wsProvider.on('error', (err: Error) => {
+      void this.wsProvider.on('error', (err: Error) => {
+        // eslint-disable-next-line no-console
         console.warn(`[${this.chainName}] WS error:`, err.message);
       });
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.warn(
         `[${this.chainName}] Failed to start block subscription:`,
         (err as Error).message,
@@ -67,16 +69,16 @@ export class EvmAdapter implements BlockchainAdapter {
     return { blockNumber, avgBlockTime };
   }
 
-  async getAvgBlockTime(): Promise<number> {
+  getAvgBlockTime(): Promise<number> {
     if (this.blockTimes.length < 2) {
-      return 0;
+      return Promise.resolve(0);
     }
     const deltas: number[] = [];
     for (let i = 1; i < this.blockTimes.length; i++) {
       deltas.push((this.blockTimes[i]! - this.blockTimes[i - 1]!) / 1000);
     }
     const avg = deltas.reduce((a, b) => a + b, 0) / deltas.length;
-    return Math.round(avg * 10) / 10;
+    return Promise.resolve(Math.round(avg * 10) / 10);
   }
 
   async getTokenInfo(address: string): Promise<TokenInfo> {
@@ -104,11 +106,11 @@ export class EvmAdapter implements BlockchainAdapter {
         totalSupply: totalSupply.toString(),
       };
     } catch (err) {
-      throw new Error(`[${this.chainName}] ${(err as Error).message}`);
+      throw new Error(`[${this.chainName}] ${(err as Error).message}`, { cause: err });
     }
   }
 
   destroy(): void {
-    this.wsProvider.destroy();
+    void this.wsProvider.destroy();
   }
 }

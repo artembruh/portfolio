@@ -1,10 +1,10 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2021",
+    "target": "ES2022",
     "module": "CommonJS",
     "moduleResolution": "node",
-    "lib": ["ES2021"],
+    "lib": ["ES2022"],
     "outDir": "dist",
     "rootDir": "src",
     "emitDecoratorMetadata": true,
