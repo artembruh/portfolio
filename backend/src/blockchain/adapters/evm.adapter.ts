@@ -27,6 +27,7 @@ export class EvmAdapter implements BlockchainAdapter {
   private readonly httpProvider: JsonRpcProvider;
   private readonly wsProvider: WebSocketProvider;
   private readonly blockTimes: number[] = [];
+  private readonly blockListeners: Array<() => void> = [];
 
   constructor(
     private readonly httpRpcUrl: string,
@@ -38,12 +39,19 @@ export class EvmAdapter implements BlockchainAdapter {
     this.startBlockSubscription();
   }
 
+  onBlock(callback: () => void): void {
+    this.blockListeners.push(callback);
+  }
+
   private startBlockSubscription(): void {
     try {
       void this.wsProvider.on('block', () => {
         this.blockTimes.push(Date.now());
         if (this.blockTimes.length > 20) {
           this.blockTimes.shift();
+        }
+        for (const cb of this.blockListeners) {
+          cb();
         }
       });
       void this.wsProvider.on('error', (err: Error) => {
