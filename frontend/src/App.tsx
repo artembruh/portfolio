@@ -1,8 +1,22 @@
+import { Routes, Route } from 'react-router-dom';
+import { Layout } from './components/layout/Layout';
+
+function Landing() {
+  return <div className="text-muted-foreground">Landing page — coming soon</div>;
+}
+
+function BlockchainExplorer() {
+  return <div className="text-muted-foreground">Blockchain Explorer — coming soon</div>;
+}
+
 function App() {
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 flex items-center justify-center">
-      <h1 className="text-3xl font-mono">Portfolio — Loading...</h1>
-    </div>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/" element={<Landing />} />
+        <Route path="/blockchain" element={<BlockchainExplorer />} />
+      </Route>
+    </Routes>
   );
 }
 
