@@ -10,7 +10,6 @@ import {
 import { OnModuleInit, Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { BlockchainService } from './services/blockchain.service';
-import { getErrorMessage } from './utils/get-error-message';
 
 @WebSocketGateway({ cors: { origin: process.env['WS_CORS_ORIGIN'] ?? '*' } })
 export class BlockchainGateway
@@ -29,18 +28,14 @@ export class BlockchainGateway
   onModuleInit(): void {
     for (const chain of this.blockchainService.getSupportedChains()) {
       this.blockchainService.getAdapter(chain).onBlock((): void => {
-        this.emitBlockUpdate(chain).catch((err: unknown) => {
-          this.logger.warn(
-            `[${chain}] Failed to fetch block info on block event: ${getErrorMessage(err)}`,
-          );
-        });
+        this.emitBlockUpdate(chain);
       });
     }
   }
 
-  private async emitBlockUpdate(chain: string): Promise<void> {
+  private emitBlockUpdate(chain: string): void {
     if (!this.server) return;
-    const blockInfo = await this.blockchainService.getAdapter(chain).getLatestBlock();
+    const blockInfo = this.blockchainService.getAdapter(chain).getLatestBlock();
     this.server.to(chain).emit('block_update', { chain, ...blockInfo });
   }
 
@@ -76,13 +71,7 @@ export class BlockchainGateway
     await client.join(chain);
     this.subscriptions.set(client.id, chain);
 
-    try {
-      const blockInfo = await this.blockchainService.getAdapter(chain).getLatestBlock();
-      client.emit('block_update', { chain, ...blockInfo });
-    } catch (err) {
-      client.emit('error', {
-        message: `Failed to fetch block info: ${getErrorMessage(err)}`,
-      });
-    }
+    const blockInfo = this.blockchainService.getAdapter(chain).getLatestBlock();
+    client.emit('block_update', { chain, ...blockInfo });
   }
 }

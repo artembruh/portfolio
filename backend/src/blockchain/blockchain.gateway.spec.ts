@@ -7,7 +7,7 @@ describe('BlockchainGateway', () => {
   let mockBlockchainService: jest.Mocked<BlockchainService>;
 
   const mockEthAdapter: jest.Mocked<BlockchainAdapter> = {
-    getLatestBlock: jest.fn().mockResolvedValue({ blockNumber: 12345, avgBlockTime: 12.1 }),
+    getLatestBlock: jest.fn().mockReturnValue({ blockNumber: 12345, avgBlockTime: 12.1 }),
     getAvgBlockTime: jest.fn(),
     getTokenInfo: jest.fn(),
     onBlock: jest.fn(),
@@ -15,7 +15,7 @@ describe('BlockchainGateway', () => {
   };
 
   const mockBaseAdapter: jest.Mocked<BlockchainAdapter> = {
-    getLatestBlock: jest.fn().mockResolvedValue({ blockNumber: 99999, avgBlockTime: 2.0 }),
+    getLatestBlock: jest.fn().mockReturnValue({ blockNumber: 99999, avgBlockTime: 2.0 }),
     getAvgBlockTime: jest.fn(),
     getTokenInfo: jest.fn(),
     onBlock: jest.fn(),
@@ -53,10 +53,10 @@ describe('BlockchainGateway', () => {
     };
 
     // Reset per-adapter mocks
-    mockEthAdapter.getLatestBlock.mockResolvedValue({ blockNumber: 12345, avgBlockTime: 12.1 });
+    mockEthAdapter.getLatestBlock.mockReturnValue({ blockNumber: 12345, avgBlockTime: 12.1 });
     mockEthAdapter.getTokenInfo.mockReset();
     mockEthAdapter.onBlock.mockReset();
-    mockBaseAdapter.getLatestBlock.mockResolvedValue({ blockNumber: 99999, avgBlockTime: 2.0 });
+    mockBaseAdapter.getLatestBlock.mockReturnValue({ blockNumber: 99999, avgBlockTime: 2.0 });
     mockBaseAdapter.onBlock.mockReset();
 
     gateway = new BlockchainGateway(mockBlockchainService);
@@ -154,7 +154,7 @@ describe('BlockchainGateway', () => {
       expect(mockBaseAdapter.onBlock).toHaveBeenCalledTimes(1);
     });
 
-    it('onBlock callback emits block_update to chain room via server.to(chain) (BLKC-02, BLKC-03)', async () => {
+    it('onBlock callback emits block_update to chain room via server.to(chain) (BLKC-02, BLKC-03)', () => {
       gateway.onModuleInit();
 
       // Capture the callback registered for ethereum
@@ -162,9 +162,8 @@ describe('BlockchainGateway', () => {
       expect(ethOnBlockCall).toBeDefined();
       const ethCallback = ethOnBlockCall![0];
 
-      // Invoke the callback and wait for async operations
+      // Invoke the callback — emitBlockUpdate is sync, assertions can follow immediately
       ethCallback();
-      await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(mockServer.to).toHaveBeenCalledWith('ethereum');
       const roomEmitMock = mockServer.to.mock.results[0]?.value?.emit as jest.Mock;
@@ -173,23 +172,6 @@ describe('BlockchainGateway', () => {
         blockNumber: 12345,
         avgBlockTime: 12.1,
       });
-    });
-
-    it('onBlock callback swallows getLatestBlock errors without throwing', async () => {
-      gateway.onModuleInit();
-
-      // Make getLatestBlock reject for this test
-      mockEthAdapter.getLatestBlock.mockRejectedValueOnce(new Error('RPC timeout'));
-
-      const ethOnBlockCall = mockEthAdapter.onBlock.mock.calls[0];
-      expect(ethOnBlockCall).toBeDefined();
-      const ethCallback = ethOnBlockCall![0];
-
-      // Should not throw
-      expect(() => ethCallback()).not.toThrow();
-
-      // Wait for async internal error handling
-      await new Promise((resolve) => setTimeout(resolve, 10));
     });
   });
 });
