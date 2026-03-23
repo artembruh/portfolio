@@ -118,11 +118,11 @@ describe('BlockchainGateway', () => {
       // Subscribe first to populate the map
       await gateway.handleSubscribeChain({ chain: 'ethereum' }, mockClient as unknown as import('socket.io').Socket);
 
-      gateway.handleDisconnect(mockClient as unknown as import('socket.io').Socket);
+      await gateway.handleDisconnect(mockClient as unknown as import('socket.io').Socket);
 
       // Disconnecting again should not call leave (map is empty)
       mockClient.leave.mockClear();
-      gateway.handleDisconnect(mockClient as unknown as import('socket.io').Socket);
+      await gateway.handleDisconnect(mockClient as unknown as import('socket.io').Socket);
       expect(mockClient.leave).not.toHaveBeenCalled();
     });
 
@@ -130,16 +130,16 @@ describe('BlockchainGateway', () => {
       await gateway.handleSubscribeChain({ chain: 'ethereum' }, mockClient as unknown as import('socket.io').Socket);
       mockClient.leave.mockClear();
 
-      gateway.handleDisconnect(mockClient as unknown as import('socket.io').Socket);
+      await gateway.handleDisconnect(mockClient as unknown as import('socket.io').Socket);
 
       expect(mockClient.leave).toHaveBeenCalledWith('ethereum');
     });
 
-    it('handles disconnect for a client with no subscription (BACK-09)', () => {
+    it('handles disconnect for a client with no subscription (BACK-09)', async () => {
       // Client never subscribed
-      expect(() => {
-        gateway.handleDisconnect(mockClient as unknown as import('socket.io').Socket);
-      }).not.toThrow();
+      await expect(
+        gateway.handleDisconnect(mockClient as unknown as import('socket.io').Socket),
+      ).resolves.not.toThrow();
 
       expect(mockClient.leave).not.toHaveBeenCalled();
     });

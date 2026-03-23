@@ -191,6 +191,7 @@ describe('SolanaAdapter', () => {
     it('schedules reconnect (scheduleReconnect) with 1000ms delay when subscription throws non-abort error', async () => {
       // Use mockImplementation so a fresh generator is created on each call
       mockSubscribe.mockImplementation(async function* () {
+        yield* []; // satisfy require-yield
         throw new Error('WS disconnected');
       });
 
@@ -211,6 +212,7 @@ describe('SolanaAdapter', () => {
     it('doubles backoff delay on consecutive errors (1000, 2000, 4000)', async () => {
       // Use mockImplementation so a fresh generator is created on each call
       mockSubscribe.mockImplementation(async function* () {
+        yield* []; // satisfy require-yield
         throw new Error('WS disconnected');
       });
 
@@ -239,6 +241,7 @@ describe('SolanaAdapter', () => {
 
     it('caps backoff delay at 60000ms after enough doublings', async () => {
       mockSubscribe.mockImplementation(async function* () {
+        yield* []; // satisfy require-yield
         throw new Error('WS disconnected');
       });
 
@@ -275,6 +278,7 @@ describe('SolanaAdapter', () => {
     it('resets backoff delay to 1000ms after a successful subscription', async () => {
       // First: fail, causing delay to double to 2000
       mockSubscribe.mockImplementation(async function* () {
+        yield* []; // satisfy require-yield
         throw new Error('WS disconnected');
       });
 
@@ -306,6 +310,7 @@ describe('SolanaAdapter', () => {
 
     it('does NOT reconnect after destroy() is called', async () => {
       mockSubscribe.mockImplementation(async function* () {
+        yield* []; // satisfy require-yield
         throw new Error('WS disconnected');
       });
 
@@ -330,6 +335,7 @@ describe('SolanaAdapter', () => {
 
     it('clears slotTimes on reconnect so getAvgBlockTime returns 0.4 default', async () => {
       mockSubscribe.mockImplementation(async function* () {
+        yield* []; // satisfy require-yield
         throw new Error('WS disconnected');
       });
 
@@ -376,6 +382,7 @@ describe('SolanaAdapter', () => {
     it('calls logger.warn on subscription error (not console.warn)', async () => {
       jest.useFakeTimers();
       mockSubscribe.mockImplementation(async function* () {
+        yield* []; // satisfy require-yield
         throw new Error('WS disconnected');
       });
 
@@ -385,9 +392,8 @@ describe('SolanaAdapter', () => {
         'solana',
       );
 
-      await Promise.resolve();
-      await Promise.resolve();
-      await Promise.resolve();
+      // Allow enough microtask ticks for the async generator to throw and be caught
+      for (let i = 0; i < 10; i++) await Promise.resolve();
 
       expect(mockLoggerWarn).toHaveBeenCalled();
 

@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
+import { Logger } from '@nestjs/common';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { AppModule } from './app.module';
 
@@ -11,4 +12,5 @@ async function bootstrap(): Promise<void> {
   await app.listen(port);
 }
 
-bootstrap().catch(console.error);
+const logger = new Logger('Bootstrap');
+bootstrap().catch((err: unknown) => logger.error('Bootstrap failed', err));
