@@ -3,7 +3,6 @@ import { useBlockchainWs } from '@/features/blockchain/hooks/useBlockchainWs';
 import ChainTabs from '@/features/blockchain/components/ChainTabs';
 import BlockInfoPanel from '@/features/blockchain/components/BlockInfo';
 import TokenLookup from '@/features/blockchain/components/TokenLookup';
-import TraceTerminal from '@/features/blockchain/components/TraceTerminal';
 import { Card, CardContent } from '@/components/ui/card';
 import type { ChainId } from '@/types';
 
@@ -17,7 +16,7 @@ function formatSupply(raw: string): string {
 
 export default function BlockchainExplorer() {
   const [activeChain, setActiveChain] = useState<ChainId>('ethereum');
-  const { status, blockInfo, traceLines, tokenResult, isLookingUp, subscribeChain, lookupToken } =
+  const { status, blockInfo, tokenResult, isLookingUp, subscribeChain, lookupToken } =
     useBlockchainWs();
 
   useEffect(() => {
@@ -29,7 +28,7 @@ export default function BlockchainExplorer() {
   };
 
   const handleLookup = (address: string) => {
-    lookupToken(activeChain, address);
+    void lookupToken(activeChain, address);
   };
 
   return (
@@ -48,7 +47,6 @@ export default function BlockchainExplorer() {
         </div>
         {/* Right column */}
         <div className="space-y-4">
-          <TraceTerminal lines={traceLines} />
           {tokenResult && (
             <Card>
               <CardContent className="p-6 space-y-2 font-mono text-sm">

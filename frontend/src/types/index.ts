@@ -4,12 +4,6 @@ export interface BlockInfo {
   avgBlockTime: number;
 }
 
-export interface TraceStep {
-  step: number;
-  status: 'in_progress' | 'done' | 'error';
-  message: string;
-}
-
 export interface TokenInfo {
   name: string;
   symbol: string;
