@@ -20,21 +20,32 @@ RUN yarn install --frozen-lockfile
 FROM node:22-alpine AS build-frontend
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/frontend/node_modules ./frontend/node_modules 2>/dev/null || true
+# Vite is not hoisted — lives in frontend/node_modules (symlink from root .bin)
+COPY --from=deps /app/frontend/node_modules ./frontend/node_modules
+ENV PATH="/app/node_modules/.bin:$PATH"
 COPY frontend ./frontend
-COPY package.json ./
-RUN yarn workspace frontend build
+# tsconfig.base.json must be copied — frontend/tsconfig.json extends it
+COPY package.json tsconfig.base.json ./
+# Run build directly — yarn workspace rewrites PATH to frontend/node_modules/.bin which
+# doesn't exist with Yarn Classic hoisting (all bins are in root node_modules/.bin)
+WORKDIR /app/frontend
+RUN tsc -p tsconfig.json && vite build
+WORKDIR /app
 # Output: /app/frontend/dist/
 
 # Stage 3: Build backend (NestJS)
 FROM node:22-alpine AS build-backend
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/backend/node_modules ./backend/node_modules 2>/dev/null || true
+# Some backend deps (e.g. @solana/kit) are not hoisted — copy workspace node_modules too
+COPY --from=deps /app/backend/node_modules ./backend/node_modules
+ENV PATH="/app/node_modules/.bin:$PATH"
 COPY backend ./backend
 # tsconfig.base.json must be copied — backend/tsconfig.json extends it
 COPY package.json tsconfig.base.json ./
-RUN yarn workspace backend build
+WORKDIR /app/backend
+RUN nest build
+WORKDIR /app
 # Output: /app/backend/dist/
 
 # Stage 4 (final): nginx target — serves React SPA via Nginx
