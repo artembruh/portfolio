@@ -4,6 +4,7 @@ import {
   isAddress,
   address,
 } from '@solana/kit';
+import { Logger } from '@nestjs/common';
 import { fetchMetadataFromSeeds } from '@metaplex-foundation/mpl-token-metadata-kit';
 import { BlockchainAdapter } from '../interfaces/blockchain-adapter.interface';
 import { BlockInfo } from '../dto/block-info.dto';
@@ -12,12 +13,42 @@ import { withTimeout } from '../utils/with-timeout';
 
 const RPC_TIMEOUT_MS = 15_000;
 
+interface SplMintInfo {
+  decimals: number;
+  supply: string;
+  mintAuthority: string | null;
+  freezeAuthority: string | null;
+  isInitialized: boolean;
+}
+
+interface SplParsedMintData {
+  parsed: {
+    info: SplMintInfo;
+    type: string;
+  };
+  program: string;
+  space: bigint;
+}
+
+function isSplParsedData(d: unknown): d is SplParsedMintData {
+  return (
+    typeof d === 'object' &&
+    d !== null &&
+    'parsed' in d &&
+    typeof (d as SplParsedMintData).parsed?.info?.decimals === 'number'
+  );
+}
+
 export class SolanaAdapter implements BlockchainAdapter {
+  private readonly logger = new Logger(SolanaAdapter.name);
   private readonly rpc: ReturnType<typeof createSolanaRpc>;
   private readonly rpcSubscriptions: ReturnType<typeof createSolanaRpcSubscriptions>;
   private readonly slotTimes: number[] = [];
   private readonly blockListeners: Array<() => void> = [];
-  private abortController: AbortController | null = null;
+  private abortController: AbortController = new AbortController();
+  private _reconnectDelay = 1_000;
+  private _reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private _destroyed = false;
 
   constructor(
     private readonly httpRpcUrl: string,
@@ -64,14 +95,11 @@ export class SolanaAdapter implements BlockchainAdapter {
       'getAccountInfo',
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const parsedInfo = (accountInfo.value?.data as any)?.parsed?.info;
-    if (!parsedInfo) {
+    const data = accountInfo.value?.data;
+    if (!isSplParsedData(data)) {
       throw new Error('Not a valid SPL token mint account');
     }
-
-    const decimals: number = parsedInfo.decimals;
-    const supply: string = parsedInfo.supply;
+    const { decimals, supply } = data.parsed.info;
 
     let name = 'Unknown Token';
     let symbol = 'UNKNOWN';
@@ -92,31 +120,54 @@ export class SolanaAdapter implements BlockchainAdapter {
 
   private startSlotSubscription(): void {
     this.abortController = new AbortController();
-    void (async () => {
-      try {
-        const slotNotifications = await this.rpcSubscriptions
-          .slotNotifications()
-          .subscribe({ abortSignal: this.abortController!.signal });
+    this.slotTimes.length = 0;
+    this.runSubscriptionLoop().catch(() => {
+      // errors handled internally in runSubscriptionLoop
+    });
+  }
 
-        for await (const _notification of slotNotifications) {
-          this.slotTimes.push(Date.now());
-          if (this.slotTimes.length > 20) {
-            this.slotTimes.shift();
-          }
-          for (const cb of this.blockListeners) {
-            cb();
-          }
-        }
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          // eslint-disable-next-line no-console
-          console.warn(`[${this.chainName}] Slot subscription error:`, (err as Error).message);
-        }
+  private async runSubscriptionLoop(): Promise<void> {
+    try {
+      const slotNotifications = await this.rpcSubscriptions
+        .slotNotifications()
+        .subscribe({ abortSignal: this.abortController.signal });
+      this.logger.log(`[${this.chainName}] Slot subscription active`);
+      for await (const _slot of slotNotifications) {
+        _slot satisfies object;
+        this._reconnectDelay = 1_000;
+        this.slotTimes.push(Date.now());
+        if (this.slotTimes.length > 20) this.slotTimes.shift();
+        for (const cb of this.blockListeners) cb();
       }
-    })();
+    } catch (err) {
+      if (err instanceof Error && err.name !== 'AbortError') {
+        this.logger.warn(
+          `[${this.chainName}] Slot subscription error: ${err.message}`,
+        );
+        this.scheduleReconnect();
+      }
+    }
+  }
+
+  private scheduleReconnect(): void {
+    if (this._destroyed || this._reconnectTimer) return;
+    const delay = this._reconnectDelay;
+    this.logger.warn(
+      `[${this.chainName}] Slot subscription lost — reconnecting in ${delay}ms`,
+    );
+    this._reconnectTimer = setTimeout(() => {
+      this._reconnectTimer = null;
+      if (!this._destroyed) this.startSlotSubscription();
+    }, delay);
+    this._reconnectDelay = Math.min(this._reconnectDelay * 2, 60_000);
   }
 
   destroy(): void {
-    this.abortController?.abort();
+    this._destroyed = true;
+    if (this._reconnectTimer) {
+      clearTimeout(this._reconnectTimer);
+      this._reconnectTimer = null;
+    }
+    this.abortController.abort();
   }
 }
