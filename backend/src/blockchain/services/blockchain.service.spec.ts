@@ -10,6 +10,7 @@ describe('BlockchainService', () => {
     getAvgBlockTime: jest.fn(),
     getTokenInfo: jest.fn(),
     onBlock: jest.fn(),
+    destroy: jest.fn(),
   };
 
   const mockBaseAdapter: BlockchainAdapter = {
@@ -17,6 +18,7 @@ describe('BlockchainService', () => {
     getAvgBlockTime: jest.fn(),
     getTokenInfo: jest.fn(),
     onBlock: jest.fn(),
+    destroy: jest.fn(),
   };
 
   const mockAdapters = new Map<string, BlockchainAdapter>([
