@@ -116,11 +116,15 @@ describe('EvmAdapter', () => {
   });
 
   describe('reconnection', () => {
+    let setTimeoutSpy: jest.SpyInstance;
+
     beforeEach(() => {
       jest.useFakeTimers();
+      setTimeoutSpy = jest.spyOn(global, 'setTimeout');
     });
 
     afterEach(() => {
+      setTimeoutSpy.mockRestore();
       jest.useRealTimers();
     });
 
@@ -136,7 +140,7 @@ describe('EvmAdapter', () => {
       const wsMock = getWsProviderMock();
       expect(wsMock.websocket.onclose).toBeDefined();
       wsMock.websocket.onclose!();
-      expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), 1000);
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 1000);
     });
 
     it('doubles backoff delay on consecutive disconnects', () => {
@@ -147,7 +151,7 @@ describe('EvmAdapter', () => {
       let wsMock = getWsProviderMock();
       // First disconnect — expect 1000ms
       wsMock.websocket.onclose!();
-      expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 1000);
+      expect(setTimeoutSpy).toHaveBeenLastCalledWith(expect.any(Function), 1000);
 
       // Advance timer to trigger reconnect (new WebSocketProvider created)
       jest.advanceTimersByTime(1000);
@@ -155,7 +159,7 @@ describe('EvmAdapter', () => {
       wsMock = getWsProviderMock();
       // Second disconnect — expect 2000ms
       wsMock.websocket.onclose!();
-      expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 2000);
+      expect(setTimeoutSpy).toHaveBeenLastCalledWith(expect.any(Function), 2000);
 
       // Advance timer to trigger reconnect (new WebSocketProvider created)
       jest.advanceTimersByTime(2000);
@@ -163,7 +167,7 @@ describe('EvmAdapter', () => {
       wsMock = getWsProviderMock();
       // Third disconnect — expect 4000ms
       wsMock.websocket.onclose!();
-      expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 4000);
+      expect(setTimeoutSpy).toHaveBeenLastCalledWith(expect.any(Function), 4000);
 
       expect(WebSocketProvider).toHaveBeenCalledTimes(3);
     });
@@ -175,14 +179,14 @@ describe('EvmAdapter', () => {
       for (let i = 0; i < delays.length; i++) {
         const wsMock = getWsProviderMock();
         wsMock.websocket.onclose!();
-        expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), delays[i]);
+        expect(setTimeoutSpy).toHaveBeenLastCalledWith(expect.any(Function), delays[i]);
         jest.advanceTimersByTime(delays[i]!);
       }
 
       // After 7 reconnects, the 8th disconnect should still use 60000ms (cap)
       const wsMock = getWsProviderMock();
       wsMock.websocket.onclose!();
-      expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 60000);
+      expect(setTimeoutSpy).toHaveBeenLastCalledWith(expect.any(Function), 60000);
     });
 
     it('resets backoff after successful reconnect', async () => {
@@ -192,7 +196,7 @@ describe('EvmAdapter', () => {
       const wsMock = getWsProviderMock();
       // First disconnect
       wsMock.websocket.onclose!();
-      expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 1000);
+      expect(setTimeoutSpy).toHaveBeenLastCalledWith(expect.any(Function), 1000);
 
       // Advance timer — triggers reconnect, new provider, startBlockSubscription called
       jest.advanceTimersByTime(1000);
@@ -204,11 +208,10 @@ describe('EvmAdapter', () => {
       // Second disconnect after successful reconnect — should reset to 1000ms
       const newWsMock = getWsProviderMock();
       newWsMock.websocket.onclose!();
-      expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 1000);
+      expect(setTimeoutSpy).toHaveBeenLastCalledWith(expect.any(Function), 1000);
     });
 
     it('does not reconnect after destroy()', () => {
-      const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
       const callsBefore = setTimeoutSpy.mock.calls.length;
 
       adapter.destroy();
