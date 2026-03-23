@@ -9,6 +9,7 @@ import { BlockchainAdapter } from '../interfaces/blockchain-adapter.interface';
 import { BlockInfo } from '../dto/block-info.dto';
 import { TokenInfo } from '../dto/token-info.dto';
 import { withTimeout } from '../utils/with-timeout';
+import { getErrorMessage } from '../utils/get-error-message';
 
 const RPC_TIMEOUT_MS = 15_000;
 
@@ -108,9 +109,9 @@ export class SolanaAdapter implements BlockchainAdapter {
           }
         }
       } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
+        if (err instanceof Error && err.name !== 'AbortError') {
           // eslint-disable-next-line no-console
-          console.warn(`[${this.chainName}] Slot subscription error:`, (err as Error).message);
+          console.warn(`[${this.chainName}] Slot subscription error:`, getErrorMessage(err));
         }
       }
     })();

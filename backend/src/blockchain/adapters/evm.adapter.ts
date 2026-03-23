@@ -3,6 +3,7 @@ import { BlockchainAdapter } from '../interfaces/blockchain-adapter.interface';
 import { BlockInfo } from '../dto/block-info.dto';
 import { TokenInfo } from '../dto/token-info.dto';
 import { withTimeout } from '../utils/with-timeout';
+import { getErrorMessage } from '../utils/get-error-message';
 
 const RPC_TIMEOUT_MS = 15_000;
 
@@ -40,7 +41,7 @@ export class EvmAdapter implements BlockchainAdapter {
       this.startBlockSubscription();
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.warn(`[${this.chainName}] WS provider init failed:`, (err as Error).message);
+      console.warn(`[${this.chainName}] WS provider init failed:`, getErrorMessage(err));
     }
   }
 
@@ -68,7 +69,7 @@ export class EvmAdapter implements BlockchainAdapter {
       // eslint-disable-next-line no-console
       console.warn(
         `[${this.chainName}] Failed to start block subscription:`,
-        (err as Error).message,
+        getErrorMessage(err),
       );
     }
   }
@@ -120,7 +121,7 @@ export class EvmAdapter implements BlockchainAdapter {
         totalSupply: totalSupply.toString(),
       };
     } catch (err) {
-      throw new Error(`[${this.chainName}] ${(err as Error).message}`, { cause: err });
+      throw new Error(`[${this.chainName}] ${getErrorMessage(err)}`, { cause: err });
     }
   }
 

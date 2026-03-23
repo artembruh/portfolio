@@ -1,4 +1,4 @@
-export class BlockInfo {
-  blockNumber!: number;
-  avgBlockTime!: number;
+export interface BlockInfo {
+  blockNumber: number;
+  avgBlockTime: number;
 }

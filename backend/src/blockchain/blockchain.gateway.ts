@@ -12,6 +12,7 @@ import { Server, Socket } from 'socket.io';
 import { BlockchainService } from './services/blockchain.service';
 import { BlockchainAdapter } from './interfaces/blockchain-adapter.interface';
 import { TokenInfo } from './dto/token-info.dto';
+import { getErrorMessage } from './utils/get-error-message';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class BlockchainGateway
@@ -42,7 +43,7 @@ export class BlockchainGateway
             this.server.to(chain).emit('block_update', { chain, ...blockInfo });
           } catch (err) {
             this.logger.warn(
-              `[${chain}] Failed to fetch block info on block event: ${(err as Error).message}`,
+              `[${chain}] Failed to fetch block info on block event: ${getErrorMessage(err)}`,
             );
           }
         })();
@@ -88,7 +89,7 @@ export class BlockchainGateway
       client.emit('block_update', { chain, ...blockInfo });
     } catch (err) {
       client.emit('error', {
-        message: `Failed to fetch block info: ${(err as Error).message}`,
+        message: `Failed to fetch block info: ${getErrorMessage(err)}`,
       });
     }
   }
@@ -140,7 +141,7 @@ export class BlockchainGateway
     try {
       tokenInfo = await adapter.getTokenInfo(tokenAddress);
     } catch (err) {
-      client.emit('trace', { step: 2, status: 'error', message: (err as Error).message });
+      client.emit('trace', { step: 2, status: 'error', message: getErrorMessage(err) });
       return;
     }
     client.emit('trace', { step: 2, status: 'done', message: 'Token info retrieved' });
