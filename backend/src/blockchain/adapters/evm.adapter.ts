@@ -1,11 +1,24 @@
-import { JsonRpcProvider, WebSocketProvider, Contract } from 'ethers';
+import { Logger } from '@nestjs/common';
+import { JsonRpcProvider, WebSocketProvider, Contract, isAddress } from 'ethers';
+import type { WebSocketLike } from 'ethers';
 import { BlockchainAdapter } from '../interfaces/blockchain-adapter.interface';
 import { BlockInfo } from '../dto/block-info.dto';
 import { TokenInfo } from '../dto/token-info.dto';
 import { withTimeout } from '../utils/with-timeout';
+import { getErrorMessage } from '../utils/get-error-message';
 import { BlockHistoryStore } from '../utils/block-history-store';
 
 const RPC_TIMEOUT_MS = 15_000;
+
+/**
+ * Extends WebSocketLike with onclose handler.
+ * ethers v6 WebSocketLike does not declare onclose in its TypeScript interface
+ * (GitHub #4587), but the property exists at runtime on the underlying WebSocket.
+ * We use a typed local extension rather than casting to `any`.
+ */
+interface WebSocketWithClose extends WebSocketLike {
+  onclose: null | ((...args: unknown[]) => unknown);
+}
 
 const ERC20_ABI = [
   'function name() view returns (string)',
@@ -15,10 +28,14 @@ const ERC20_ABI = [
 ];
 
 export class EvmAdapter implements BlockchainAdapter {
+  private readonly logger = new Logger(EvmAdapter.name);
   private readonly httpProvider: JsonRpcProvider;
   private wsProvider: WebSocketProvider | null = null;
   private readonly blockHistory = new BlockHistoryStore(10, 0);
   private readonly blockListeners: Array<() => void> = [];
+  private _reconnectDelay = 1_000;
+  private _reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private _destroyed = false;
 
   constructor(
     private readonly httpRpcUrl: string,
@@ -26,23 +43,41 @@ export class EvmAdapter implements BlockchainAdapter {
     private readonly chainName: string,
   ) {
     this.httpProvider = new JsonRpcProvider(httpRpcUrl);
-    this.initWsProvider();
+    this.connect();
   }
 
-  private initWsProvider(): void {
+  private connect(): void {
     try {
       const ws = new WebSocketProvider(this.wsRpcUrl);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (ws.websocket as any).on?.('error', () => {
-        // eslint-disable-next-line no-console
-        console.warn(`[${this.chainName}] WS connection error`);
-      });
+      const socket = ws.websocket as WebSocketWithClose;
+      socket.onclose = () => {
+        this.scheduleReconnect();
+      };
+      socket.onerror = () => {
+        this.scheduleReconnect();
+      };
       this.wsProvider = ws;
+      this.blockHistory.clear();
       this.startBlockSubscription();
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.warn(`[${this.chainName}] WS provider init failed:`, (err as Error).message);
+      this.logger.warn(
+        `[${this.chainName}] WS provider init failed: ${getErrorMessage(err)}`,
+      );
+      this.scheduleReconnect();
     }
+  }
+
+  private scheduleReconnect(): void {
+    if (this._destroyed || this._reconnectTimer) return;
+    const delay = this._reconnectDelay;
+    this.logger.warn(
+      `[${this.chainName}] WS disconnected — reconnecting in ${delay}ms`,
+    );
+    this._reconnectTimer = setTimeout(() => {
+      this._reconnectTimer = null;
+      if (!this._destroyed) this.connect();
+    }, delay);
+    this._reconnectDelay = Math.min(this._reconnectDelay * 2, 60_000);
   }
 
   onBlock(callback: () => void): void {
@@ -51,25 +86,25 @@ export class EvmAdapter implements BlockchainAdapter {
 
   private startBlockSubscription(): void {
     if (!this.wsProvider) return;
-    try {
-      void this.wsProvider
-        .on('block', (blockNumber: number) => {
-          this.blockHistory.push(blockNumber, Date.now());
-          for (const cb of this.blockListeners) {
-            cb();
-          }
-        });
-      void this.wsProvider.on('error', (err: Error) => {
-        // eslint-disable-next-line no-console
-        console.warn(`[${this.chainName}] WS error:`, err.message);
+    this.wsProvider
+      .on('block', (blockNumber: number) => {
+        this.blockHistory.push(blockNumber, Date.now());
+        for (const cb of this.blockListeners) {
+          cb();
+        }
+      })
+      .then(() => {
+        this.logger.log(`[${this.chainName}] Block subscription active`);
+        this._reconnectDelay = 1_000;
+      })
+      .catch((err: unknown) => {
+        if (!this._destroyed) {
+          this.logger.warn(
+            `[${this.chainName}] Block subscription failed: ${getErrorMessage(err)}`,
+          );
+          this.scheduleReconnect();
+        }
       });
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.warn(
-        `[${this.chainName}] Failed to start block subscription:`,
-        (err as Error).message,
-      );
-    }
   }
 
   getLatestBlock(): BlockInfo {
@@ -85,6 +120,9 @@ export class EvmAdapter implements BlockchainAdapter {
   }
 
   async getTokenInfo(address: string): Promise<TokenInfo> {
+    if (!isAddress(address)) {
+      throw new Error(`Invalid EVM address: ${String(address)}`);
+    }
     try {
       const contract = new Contract(address, ERC20_ABI, this.httpProvider) as Contract & {
         name(): Promise<string>;
@@ -109,13 +147,23 @@ export class EvmAdapter implements BlockchainAdapter {
         totalSupply: totalSupply.toString(),
       };
     } catch (err) {
-      throw new Error(`[${this.chainName}] ${(err as Error).message}`, { cause: err });
+      throw new Error(`[${this.chainName}] ${getErrorMessage(err)}`, { cause: err });
     }
   }
 
   destroy(): void {
+    this._destroyed = true;
+    if (this._reconnectTimer) {
+      clearTimeout(this._reconnectTimer);
+      this._reconnectTimer = null;
+    }
     if (this.wsProvider) {
-      void this.wsProvider.destroy();
+      this.wsProvider.destroy().catch((err: unknown) => {
+        this.logger.warn(
+          `[${this.chainName}] Error during WS destroy: ${getErrorMessage(err)}`,
+        );
+      });
+      this.wsProvider = null;
     }
   }
 }
