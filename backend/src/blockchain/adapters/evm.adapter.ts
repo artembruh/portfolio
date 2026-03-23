@@ -15,7 +15,7 @@ const ERC20_ABI = [
 
 export class EvmAdapter implements BlockchainAdapter {
   private readonly httpProvider: JsonRpcProvider;
-  private readonly wsProvider: WebSocketProvider;
+  private wsProvider: WebSocketProvider | null = null;
   private readonly blockTimes: number[] = [];
   private readonly blockListeners: Array<() => void> = [];
 
@@ -25,8 +25,22 @@ export class EvmAdapter implements BlockchainAdapter {
     private readonly chainName: string,
   ) {
     this.httpProvider = new JsonRpcProvider(httpRpcUrl);
-    this.wsProvider = new WebSocketProvider(wsRpcUrl);
-    this.startBlockSubscription();
+    this.initWsProvider();
+  }
+
+  private initWsProvider(): void {
+    try {
+      const ws = new WebSocketProvider(this.wsRpcUrl);
+      ws.websocket.on('error', (err: Error) => {
+        // eslint-disable-next-line no-console
+        console.warn(`[${this.chainName}] WS connection error:`, err.message);
+      });
+      this.wsProvider = ws;
+      this.startBlockSubscription();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn(`[${this.chainName}] WS provider init failed:`, (err as Error).message);
+    }
   }
 
   onBlock(callback: () => void): void {
@@ -34,6 +48,7 @@ export class EvmAdapter implements BlockchainAdapter {
   }
 
   private startBlockSubscription(): void {
+    if (!this.wsProvider) return;
     try {
       void this.wsProvider.on('block', () => {
         this.blockTimes.push(Date.now());
@@ -109,6 +124,8 @@ export class EvmAdapter implements BlockchainAdapter {
   }
 
   destroy(): void {
-    void this.wsProvider.destroy();
+    if (this.wsProvider) {
+      void this.wsProvider.destroy();
+    }
   }
 }
