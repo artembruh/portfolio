@@ -52,9 +52,9 @@ jobs:
             git pull origin main
             docker compose up -d --build
 
-            # Verify deploy
+            # Verify deploy (backend port not exposed on host — check via docker exec)
             sleep 10
-            curl -sf http://localhost:3000/api/health > /dev/null || {
+            docker exec portfolio-backend-1 curl -sf http://localhost:3000/api/health > /dev/null || {
               echo "Health check failed — rolling back"
               docker tag portfolio-backend:prev portfolio-backend:latest 2>/dev/null || true
               docker tag portfolio-nginx:prev portfolio-nginx:latest 2>/dev/null || true
