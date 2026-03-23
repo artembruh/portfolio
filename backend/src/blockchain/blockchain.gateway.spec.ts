@@ -11,6 +11,7 @@ describe('BlockchainGateway', () => {
     getAvgBlockTime: jest.fn(),
     getTokenInfo: jest.fn(),
     onBlock: jest.fn(),
+    destroy: jest.fn(),
   };
 
   const mockBaseAdapter: jest.Mocked<BlockchainAdapter> = {
@@ -18,6 +19,7 @@ describe('BlockchainGateway', () => {
     getAvgBlockTime: jest.fn(),
     getTokenInfo: jest.fn(),
     onBlock: jest.fn(),
+    destroy: jest.fn(),
   };
 
   let mockServer: { to: jest.Mock };
