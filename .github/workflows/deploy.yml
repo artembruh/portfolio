@@ -1,0 +1,66 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - run: yarn install --frozen-lockfile
+
+      - name: Backend typecheck
+        run: yarn workspace backend build
+
+      - name: Backend tests
+        run: yarn workspace backend test
+
+  deploy:
+    name: Deploy to VPS
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$VPS_USER@$VPS_HOST" << 'DEPLOY'
+            set -e
+            cd /opt/portfolio
+
+            # Tag current images for rollback
+            docker tag portfolio-backend:latest portfolio-backend:prev 2>/dev/null || true
+            docker tag portfolio-nginx:latest portfolio-nginx:prev 2>/dev/null || true
+
+            # Pull and rebuild
+            git pull origin main
+            docker compose up -d --build
+
+            # Verify deploy
+            sleep 10
+            curl -sf http://localhost:3000/api/health > /dev/null || {
+              echo "Health check failed — rolling back"
+              docker tag portfolio-backend:prev portfolio-backend:latest 2>/dev/null || true
+              docker tag portfolio-nginx:prev portfolio-nginx:latest 2>/dev/null || true
+              docker compose up -d
+              exit 1
+            }
+
+            echo "Deploy successful"
+          DEPLOY
