@@ -3,6 +3,7 @@ import { BlockchainAdapter } from '../interfaces/blockchain-adapter.interface';
 import { BlockInfo } from '../dto/block-info.dto';
 import { TokenInfo } from '../dto/token-info.dto';
 import { withTimeout } from '../utils/with-timeout';
+import { BlockHistoryStore } from '../utils/block-history-store';
 
 const RPC_TIMEOUT_MS = 15_000;
 
@@ -16,7 +17,7 @@ const ERC20_ABI = [
 export class EvmAdapter implements BlockchainAdapter {
   private readonly httpProvider: JsonRpcProvider;
   private wsProvider: WebSocketProvider | null = null;
-  private readonly blockTimes: number[] = [];
+  private readonly blockHistory = new BlockHistoryStore(10, 0);
   private readonly blockListeners: Array<() => void> = [];
 
   constructor(
@@ -51,15 +52,13 @@ export class EvmAdapter implements BlockchainAdapter {
   private startBlockSubscription(): void {
     if (!this.wsProvider) return;
     try {
-      void this.wsProvider.on('block', () => {
-        this.blockTimes.push(Date.now());
-        if (this.blockTimes.length > 20) {
-          this.blockTimes.shift();
-        }
-        for (const cb of this.blockListeners) {
-          cb();
-        }
-      });
+      void this.wsProvider
+        .on('block', (blockNumber: number) => {
+          this.blockHistory.push(blockNumber, Date.now());
+          for (const cb of this.blockListeners) {
+            cb();
+          }
+        });
       void this.wsProvider.on('error', (err: Error) => {
         // eslint-disable-next-line no-console
         console.warn(`[${this.chainName}] WS error:`, err.message);
@@ -73,26 +72,16 @@ export class EvmAdapter implements BlockchainAdapter {
     }
   }
 
-  async getLatestBlock(): Promise<BlockInfo> {
-    const blockNumber = await withTimeout(
-      this.httpProvider.getBlockNumber(),
-      RPC_TIMEOUT_MS,
-      'getBlockNumber',
-    );
-    const avgBlockTime = await this.getAvgBlockTime();
-    return { blockNumber, avgBlockTime };
+  getLatestBlock(): BlockInfo {
+    const latest = this.blockHistory.getLatest();
+    if (!latest) {
+      return { blockNumber: 0, avgBlockTime: 0 };
+    }
+    return { blockNumber: latest.blockNumber, avgBlockTime: this.getAvgBlockTime() };
   }
 
-  getAvgBlockTime(): Promise<number> {
-    if (this.blockTimes.length < 2) {
-      return Promise.resolve(0);
-    }
-    const deltas: number[] = [];
-    for (let i = 1; i < this.blockTimes.length; i++) {
-      deltas.push((this.blockTimes[i]! - this.blockTimes[i - 1]!) / 1000);
-    }
-    const avg = deltas.reduce((a, b) => a + b, 0) / deltas.length;
-    return Promise.resolve(Math.round(avg * 10) / 10);
+  getAvgBlockTime(): number {
+    return this.blockHistory.getAvgBlockTime();
   }
 
   async getTokenInfo(address: string): Promise<TokenInfo> {
