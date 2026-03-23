@@ -6,4 +6,5 @@ export interface BlockchainAdapter {
   getAvgBlockTime(): Promise<number>;
   getTokenInfo(address: string): Promise<TokenInfo>;
   onBlock(callback: () => void): void;
+  destroy(): void;
 }

@@ -15,6 +15,7 @@
     "yarn": "^1.22.0"
   },
   "scripts": {
+    "dev": "yarn workspace backend start:dev & yarn workspace frontend dev",
     "lint": "eslint .",
     "typecheck": "tsc -p frontend/tsconfig.json --noEmit && tsc -p backend/tsconfig.json --noEmit",
     "format": "prettier --write .",
