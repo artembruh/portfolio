@@ -1,5 +1,3 @@
-const mockSend = jest.fn();
-const mockGetSlot = jest.fn(() => ({ send: mockSend }));
 const mockGetAccountInfoSend = jest.fn();
 const mockGetAccountInfo = jest.fn(() => ({ send: mockGetAccountInfoSend }));
 const mockSubscribe = jest.fn();
@@ -17,7 +15,6 @@ jest.mock('@nestjs/common', () => ({
 
 jest.mock('@solana/kit', () => ({
   createSolanaRpc: jest.fn(() => ({
-    getSlot: mockGetSlot,
     getAccountInfo: mockGetAccountInfo,
   })),
   createSolanaRpcSubscriptions: jest.fn(() => ({
@@ -56,18 +53,16 @@ describe('SolanaAdapter', () => {
   });
 
   describe('getLatestBlock', () => {
-    it('returns BlockInfo with slot number as blockNumber and 0.4 default avgBlockTime', async () => {
-      mockSend.mockResolvedValue(300000000n);
+    it('returns cold start BlockInfo { blockNumber: 0, avgBlockTime: 0.4 } when no blocks received yet', () => {
+      const result = adapter.getLatestBlock();
 
-      const result = await adapter.getLatestBlock();
-
-      expect(result).toEqual({ blockNumber: 300000000, avgBlockTime: 0.4 });
+      expect(result).toEqual({ blockNumber: 0, avgBlockTime: 0.4 });
     });
   });
 
   describe('getAvgBlockTime', () => {
-    it('returns 0.4 default when fewer than 2 slot times recorded', async () => {
-      const result = await adapter.getAvgBlockTime();
+    it('returns 0.4 default when fewer than 2 slot times recorded', () => {
+      const result = adapter.getAvgBlockTime();
       expect(result).toBe(0.4);
     });
   });
@@ -295,7 +290,7 @@ describe('SolanaAdapter', () => {
       // Now succeed on next subscribe
       mockSubscribe.mockImplementation(async function* () {
         // yields successfully, never ends (simulates active subscription)
-        yield {};
+        yield { slot: 1n, parent: 0n, root: 0n };
         await new Promise<void>(() => {}); // hang forever — subscription stays active
       });
 
@@ -333,7 +328,7 @@ describe('SolanaAdapter', () => {
       expect(reconnectCalls.length).toBe(0);
     });
 
-    it('clears slotTimes on reconnect so getAvgBlockTime returns 0.4 default', async () => {
+    it('clears blockHistory on reconnect so getAvgBlockTime returns 0.4 default', async () => {
       mockSubscribe.mockImplementation(async function* () {
         yield* []; // satisfy require-yield
         throw new Error('WS disconnected');
@@ -345,26 +340,25 @@ describe('SolanaAdapter', () => {
         'solana',
       );
 
-      // Inject slot times directly to simulate stale data before reconnect fires
-      (a as unknown as { slotTimes: number[] }).slotTimes.push(
-        Date.now() - 2000,
-        Date.now() - 1000,
-        Date.now(),
-      );
+      // Inject block history directly to simulate stale data before reconnect fires
+      const store = (a as unknown as { blockHistory: { push(b: number, t: number): void } }).blockHistory;
+      store.push(1, Date.now() - 2000);
+      store.push(2, Date.now() - 1000);
+      store.push(3, Date.now());
 
       // Verify we have stale data before error processes
-      const before = await a.getAvgBlockTime();
+      const before = a.getAvgBlockTime();
       expect(before).not.toBe(0.4);
 
       // Now let the error fire — scheduleReconnect is called
       await flushMicrotasks();
 
-      // Advance timer: startSlotSubscription fires, clears slotTimes
+      // Advance timer: startSlotSubscription fires, clears blockHistory
       jest.advanceTimersByTime(1000);
-      // startSlotSubscription sets slotTimes.length = 0 synchronously (before async loop starts)
+      // startSlotSubscription calls blockHistory.clear() synchronously (before async loop starts)
 
-      // After reconnect start, slotTimes should be cleared
-      const after = await a.getAvgBlockTime();
+      // After reconnect start, blockHistory should be cleared
+      const after = a.getAvgBlockTime();
       expect(after).toBe(0.4);
 
       a.destroy();
