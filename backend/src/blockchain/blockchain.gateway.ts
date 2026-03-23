@@ -12,8 +12,9 @@ import { Server, Socket } from 'socket.io';
 import { BlockchainService } from './services/blockchain.service';
 import { BlockchainAdapter } from './interfaces/blockchain-adapter.interface';
 import { TokenInfo } from './dto/token-info.dto';
+import { getErrorMessage } from './utils/get-error-message';
 
-@WebSocketGateway({ cors: { origin: '*' } })
+@WebSocketGateway({ cors: { origin: process.env['WS_CORS_ORIGIN'] ?? '*' } })
 export class BlockchainGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit
 {
@@ -30,22 +31,20 @@ export class BlockchainGateway
 
   constructor(private readonly blockchainService: BlockchainService) {}
 
+  private async emitBlockUpdate(chain: string): Promise<void> {
+    if (!this.server) return;
+    const blockInfo = await this.blockchainService.getAdapter(chain).getLatestBlock();
+    this.server.to(chain).emit('block_update', { chain, ...blockInfo });
+  }
+
   onModuleInit(): void {
     for (const chain of this.blockchainService.getSupportedChains()) {
       this.blockchainService.getAdapter(chain).onBlock((): void => {
-        void (async (): Promise<void> => {
-          if (!this.server) return;
-          try {
-            const blockInfo = await this.blockchainService
-              .getAdapter(chain)
-              .getLatestBlock();
-            this.server.to(chain).emit('block_update', { chain, ...blockInfo });
-          } catch (err) {
-            this.logger.warn(
-              `[${chain}] Failed to fetch block info on block event: ${(err as Error).message}`,
-            );
-          }
-        })();
+        this.emitBlockUpdate(chain).catch((err: unknown) => {
+          this.logger.warn(
+            `[${chain}] Failed to fetch block info on block event: ${getErrorMessage(err)}`,
+          );
+        });
       });
     }
   }
@@ -54,10 +53,10 @@ export class BlockchainGateway
     this.logger.debug(`Client connected: ${client.id}`);
   }
 
-  handleDisconnect(client: Socket): void {
+  async handleDisconnect(client: Socket): Promise<void> {
     const chain = this.subscriptions.get(client.id);
     if (chain) {
-      void client.leave(chain);
+      await client.leave(chain);
     }
     this.subscriptions.delete(client.id);
     this.rateLimiter.delete(client.id);
@@ -88,7 +87,7 @@ export class BlockchainGateway
       client.emit('block_update', { chain, ...blockInfo });
     } catch (err) {
       client.emit('error', {
-        message: `Failed to fetch block info: ${(err as Error).message}`,
+        message: `Failed to fetch block info: ${getErrorMessage(err)}`,
       });
     }
   }
@@ -140,7 +139,7 @@ export class BlockchainGateway
     try {
       tokenInfo = await adapter.getTokenInfo(tokenAddress);
     } catch (err) {
-      client.emit('trace', { step: 2, status: 'error', message: (err as Error).message });
+      client.emit('trace', { step: 2, status: 'error', message: getErrorMessage(err) });
       return;
     }
     client.emit('trace', { step: 2, status: 'done', message: 'Token info retrieved' });
