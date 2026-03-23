@@ -20,6 +20,29 @@ interface SplMintInfo {
   mintAuthority: string | null;
   freezeAuthority: string | null;
   isInitialized: boolean;
+  extensions?: Array<{ extension: string; state: Record<string, unknown> }>;
+}
+
+interface TokenMetadataExtension {
+  extension: 'tokenMetadata';
+  state: {
+    name: string;
+    symbol: string;
+    mint: string;
+    updateAuthority: string | null;
+    uri: string;
+    additionalMetadata: Array<unknown>;
+  };
+}
+
+function isTokenMetadataExtension(
+  ext: { extension: string; state: Record<string, unknown> },
+): ext is TokenMetadataExtension {
+  return (
+    ext.extension === 'tokenMetadata' &&
+    typeof ext.state['name'] === 'string' &&
+    typeof ext.state['symbol'] === 'string'
+  );
 }
 
 interface SplParsedMintData {
@@ -89,7 +112,6 @@ export class SolanaAdapter implements BlockchainAdapter {
       RPC_TIMEOUT_MS,
       'getAccountInfo',
     );
-
     const data = accountInfo.value?.data;
     if (!isSplParsedData(data)) {
       throw new Error('Not a valid SPL token mint account');
@@ -98,16 +120,25 @@ export class SolanaAdapter implements BlockchainAdapter {
 
     let name = 'Unknown Token';
     let symbol = 'UNKNOWN';
-    try {
-      const metadata = await withTimeout(
-        fetchMetadataFromSeeds(this.rpc, { mint }),
-        RPC_TIMEOUT_MS,
-        'fetchMetadataFromSeeds',
-      );
-      name = metadata.data.name.replace(/\0/g, '').trim();
-      symbol = metadata.data.symbol.replace(/\0/g, '').trim();
-    } catch {
-      // Token may not have Metaplex metadata — use fallback
+
+    if (data.program === 'spl-token-2022') {
+      const metaExt = data.parsed.info.extensions?.find(isTokenMetadataExtension);
+      if (metaExt) {
+        name = metaExt.state.name.trim();
+        symbol = metaExt.state.symbol.trim();
+      }
+    } else {
+      try {
+        const metadata = await withTimeout(
+          fetchMetadataFromSeeds(this.rpc, { mint }),
+          RPC_TIMEOUT_MS,
+          'fetchMetadataFromSeeds',
+        );
+        name = metadata.data.name.replace(/\0/g, '').trim();
+        symbol = metadata.data.symbol.replace(/\0/g, '').trim();
+      } catch {
+        // Token may not have Metaplex metadata — use fallback
+      }
     }
 
     return { name, symbol, decimals, totalSupply: supply };
