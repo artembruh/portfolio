@@ -5,8 +5,10 @@ import { EvmAdapter } from './adapters/evm.adapter';
 import { SolanaAdapter } from './adapters/solana.adapter';
 import { BlockchainService } from './services/blockchain.service';
 import { BlockchainGateway } from './blockchain.gateway';
+import { BlockchainController } from './blockchain.controller';
 
 @Module({
+  controllers: [BlockchainController],
   providers: [
     {
       provide: 'BLOCKCHAIN_ADAPTERS',
