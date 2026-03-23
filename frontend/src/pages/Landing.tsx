@@ -1,5 +1,5 @@
 import Hero from '@/sections/Hero';
-import Projects from '@/sections/Projects';
+import Experience from '@/sections/Experience';
 import Stack from '@/sections/Stack';
 import Education from '@/sections/Education';
 
@@ -7,7 +7,7 @@ export default function Landing() {
   return (
     <div>
       <Hero />
-      <Projects />
+      <Experience />
       <Stack />
       <Education />
     </div>
