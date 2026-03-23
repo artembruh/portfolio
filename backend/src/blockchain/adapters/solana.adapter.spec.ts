@@ -5,6 +5,15 @@ const mockGetAccountInfo = jest.fn(() => ({ send: mockGetAccountInfoSend }));
 const mockSubscribe = jest.fn();
 const mockSlotNotifications = jest.fn(() => ({ subscribe: mockSubscribe }));
 const mockFetchMetadataFromSeeds = jest.fn();
+const mockLoggerLog = jest.fn();
+const mockLoggerWarn = jest.fn();
+
+jest.mock('@nestjs/common', () => ({
+  Logger: jest.fn().mockImplementation(() => ({
+    log: mockLoggerLog,
+    warn: mockLoggerWarn,
+  })),
+}));
 
 jest.mock('@solana/kit', () => ({
   createSolanaRpc: jest.fn(() => ({
@@ -157,6 +166,233 @@ describe('SolanaAdapter', () => {
     it('can be called multiple times safely', () => {
       adapter.destroy();
       expect(() => adapter.destroy()).not.toThrow();
+    });
+  });
+
+  describe('reconnection', () => {
+    let setTimeoutSpy: jest.SpyInstance;
+
+    // Helper to flush all pending microtasks
+    async function flushMicrotasks(): Promise<void> {
+      for (let i = 0; i < 10; i++) {
+        await Promise.resolve();
+      }
+    }
+
+    beforeEach(() => {
+      jest.useFakeTimers();
+      setTimeoutSpy = jest.spyOn(global, 'setTimeout');
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('schedules reconnect (scheduleReconnect) with 1000ms delay when subscription throws non-abort error', async () => {
+      // Use mockImplementation so a fresh generator is created on each call
+      mockSubscribe.mockImplementation(async function* () {
+        throw new Error('WS disconnected');
+      });
+
+      const a = new SolanaAdapter(
+        'https://api.mainnet-beta.solana.com',
+        'wss://api.mainnet-beta.solana.com',
+        'solana',
+      );
+
+      // Allow microtasks to process the error
+      await flushMicrotasks();
+
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 1000);
+
+      a.destroy();
+    });
+
+    it('doubles backoff delay on consecutive errors (1000, 2000, 4000)', async () => {
+      // Use mockImplementation so a fresh generator is created on each call
+      mockSubscribe.mockImplementation(async function* () {
+        throw new Error('WS disconnected');
+      });
+
+      const a = new SolanaAdapter(
+        'https://api.mainnet-beta.solana.com',
+        'wss://api.mainnet-beta.solana.com',
+        'solana',
+      );
+
+      // First error: scheduleReconnect called with 1000ms
+      await flushMicrotasks();
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 1000);
+
+      // Advance time to trigger the reconnect timer, subscription throws again
+      jest.advanceTimersByTime(1000);
+      await flushMicrotasks();
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 2000);
+
+      // Advance time again, third error
+      jest.advanceTimersByTime(2000);
+      await flushMicrotasks();
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 4000);
+
+      a.destroy();
+    });
+
+    it('caps backoff delay at 60000ms after enough doublings', async () => {
+      mockSubscribe.mockImplementation(async function* () {
+        throw new Error('WS disconnected');
+      });
+
+      const a = new SolanaAdapter(
+        'https://api.mainnet-beta.solana.com',
+        'wss://api.mainnet-beta.solana.com',
+        'solana',
+      );
+
+      // Run multiple error cycles until the delay reaches the 60000ms cap
+      // Each cycle: flush microtasks (error fires, scheduleReconnect called), advance timer
+      await flushMicrotasks(); // cycle 1: delay=1000 used, _reconnectDelay becomes 2000
+      jest.advanceTimersByTime(1_000);
+      await flushMicrotasks(); // cycle 2: delay=2000 used, _reconnectDelay becomes 4000
+      jest.advanceTimersByTime(2_000);
+      await flushMicrotasks(); // cycle 3: delay=4000 used, _reconnectDelay becomes 8000
+      jest.advanceTimersByTime(4_000);
+      await flushMicrotasks(); // cycle 4: delay=8000 used, _reconnectDelay becomes 16000
+      jest.advanceTimersByTime(8_000);
+      await flushMicrotasks(); // cycle 5: delay=16000 used, _reconnectDelay becomes 32000
+      jest.advanceTimersByTime(16_000);
+      await flushMicrotasks(); // cycle 6: delay=32000 used, _reconnectDelay becomes 60000 (capped)
+      jest.advanceTimersByTime(32_000);
+      await flushMicrotasks(); // cycle 7: delay=60000 used (capped), _reconnectDelay stays 60000
+
+      // Verify that setTimeout was called with 60000 at the cap
+      const calls = setTimeoutSpy.mock.calls;
+      const delays = calls.map((c) => c[1] as number);
+      expect(delays.some((d) => d === 60_000)).toBe(true);
+
+      a.destroy();
+    });
+
+    it('resets backoff delay to 1000ms after a successful subscription', async () => {
+      // First: fail, causing delay to double to 2000
+      mockSubscribe.mockImplementation(async function* () {
+        throw new Error('WS disconnected');
+      });
+
+      const a = new SolanaAdapter(
+        'https://api.mainnet-beta.solana.com',
+        'wss://api.mainnet-beta.solana.com',
+        'solana',
+      );
+
+      await flushMicrotasks();
+      // After first failure, _reconnectDelay should be 2000
+      expect((a as unknown as { _reconnectDelay: number })._reconnectDelay).toBe(2_000);
+
+      // Now succeed on next subscribe
+      mockSubscribe.mockImplementation(async function* () {
+        // yields successfully, never ends (simulates active subscription)
+        yield {};
+        await new Promise<void>(() => {}); // hang forever — subscription stays active
+      });
+
+      jest.advanceTimersByTime(1000);
+      await flushMicrotasks();
+
+      // After successful subscription, delay should be reset to 1000
+      expect((a as unknown as { _reconnectDelay: number })._reconnectDelay).toBe(1000);
+
+      a.destroy();
+    });
+
+    it('does NOT reconnect after destroy() is called', async () => {
+      mockSubscribe.mockImplementation(async function* () {
+        throw new Error('WS disconnected');
+      });
+
+      const a = new SolanaAdapter(
+        'https://api.mainnet-beta.solana.com',
+        'wss://api.mainnet-beta.solana.com',
+        'solana',
+      );
+
+      // Destroy immediately before error is processed (scheduleReconnect checks _destroyed)
+      a.destroy();
+
+      await flushMicrotasks();
+
+      // scheduleReconnect should have been called but returned early due to _destroyed
+      // so no setTimeout should have been called with a reconnect delay
+      const reconnectCalls = setTimeoutSpy.mock.calls.filter(
+        (c) => typeof c[1] === 'number' && (c[1] as number) >= 1000,
+      );
+      expect(reconnectCalls.length).toBe(0);
+    });
+
+    it('clears slotTimes on reconnect so getAvgBlockTime returns 0.4 default', async () => {
+      mockSubscribe.mockImplementation(async function* () {
+        throw new Error('WS disconnected');
+      });
+
+      const a = new SolanaAdapter(
+        'https://api.mainnet-beta.solana.com',
+        'wss://api.mainnet-beta.solana.com',
+        'solana',
+      );
+
+      // Inject slot times directly to simulate stale data before reconnect fires
+      (a as unknown as { slotTimes: number[] }).slotTimes.push(
+        Date.now() - 2000,
+        Date.now() - 1000,
+        Date.now(),
+      );
+
+      // Verify we have stale data before error processes
+      const before = await a.getAvgBlockTime();
+      expect(before).not.toBe(0.4);
+
+      // Now let the error fire — scheduleReconnect is called
+      await flushMicrotasks();
+
+      // Advance timer: startSlotSubscription fires, clears slotTimes
+      jest.advanceTimersByTime(1000);
+      // startSlotSubscription sets slotTimes.length = 0 synchronously (before async loop starts)
+
+      // After reconnect start, slotTimes should be cleared
+      const after = await a.getAvgBlockTime();
+      expect(after).toBe(0.4);
+
+      a.destroy();
+    });
+  });
+
+  describe('logger', () => {
+    it('Logger is instantiated with SolanaAdapter name', () => {
+      const { Logger } = jest.requireMock('@nestjs/common') as {
+        Logger: jest.Mock;
+      };
+      expect(Logger).toHaveBeenCalledWith('SolanaAdapter');
+    });
+
+    it('calls logger.warn on subscription error (not console.warn)', async () => {
+      jest.useFakeTimers();
+      mockSubscribe.mockImplementation(async function* () {
+        throw new Error('WS disconnected');
+      });
+
+      const a = new SolanaAdapter(
+        'https://api.mainnet-beta.solana.com',
+        'wss://api.mainnet-beta.solana.com',
+        'solana',
+      );
+
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(mockLoggerWarn).toHaveBeenCalled();
+
+      a.destroy();
+      jest.useRealTimers();
     });
   });
 });
