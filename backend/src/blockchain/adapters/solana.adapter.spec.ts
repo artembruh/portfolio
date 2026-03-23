@@ -74,12 +74,15 @@ describe('SolanaAdapter', () => {
       mockGetAccountInfoSend.mockResolvedValue({
         value: {
           data: {
+            program: 'spl-token',
             parsed: {
               info: {
                 decimals: 6,
                 supply: '1000000',
               },
+              type: 'mint',
             },
+            space: BigInt(82),
           },
         },
       });
@@ -120,12 +123,15 @@ describe('SolanaAdapter', () => {
       mockGetAccountInfoSend.mockResolvedValue({
         value: {
           data: {
+            program: 'spl-token',
             parsed: {
               info: {
                 decimals: 9,
                 supply: '500000000',
               },
+              type: 'mint',
             },
+            space: BigInt(82),
           },
         },
       });
@@ -139,6 +145,87 @@ describe('SolanaAdapter', () => {
         decimals: 9,
         totalSupply: '500000000',
       });
+    });
+
+    it('returns name and symbol from tokenMetadata extension for Token-2022 token', async () => {
+      mockGetAccountInfoSend.mockResolvedValue({
+        value: {
+          data: {
+            program: 'spl-token-2022',
+            parsed: {
+              info: {
+                decimals: 6,
+                supply: '5000000',
+                mintAuthority: null,
+                freezeAuthority: null,
+                isInitialized: true,
+                extensions: [
+                  {
+                    extension: 'tokenMetadata',
+                    state: {
+                      name: 'Mock Token',
+                      symbol: 'MCK',
+                      mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+                      updateAuthority: null,
+                      uri: '',
+                      additionalMetadata: [],
+                    },
+                  },
+                ],
+              },
+              type: 'mint',
+            },
+            space: BigInt(398),
+          },
+        },
+      });
+
+      const result = await adapter.getTokenInfo(VALID_MINT);
+
+      expect(result).toEqual({
+        name: 'Mock Token',
+        symbol: 'MCK',
+        decimals: 6,
+        totalSupply: '5000000',
+      });
+      expect(mockFetchMetadataFromSeeds).not.toHaveBeenCalled();
+    });
+
+    it('returns Unknown Token fallback when Token-2022 has no tokenMetadata extension', async () => {
+      mockGetAccountInfoSend.mockResolvedValue({
+        value: {
+          data: {
+            program: 'spl-token-2022',
+            parsed: {
+              info: {
+                decimals: 9,
+                supply: '1000000',
+                mintAuthority: null,
+                freezeAuthority: null,
+                isInitialized: true,
+                extensions: [
+                  {
+                    extension: 'transferFeeConfig',
+                    state: {},
+                  },
+                ],
+              },
+              type: 'mint',
+            },
+            space: BigInt(398),
+          },
+        },
+      });
+
+      const result = await adapter.getTokenInfo(VALID_MINT);
+
+      expect(result).toEqual({
+        name: 'Unknown Token',
+        symbol: 'UNKNOWN',
+        decimals: 9,
+        totalSupply: '1000000',
+      });
+      expect(mockFetchMetadataFromSeeds).not.toHaveBeenCalled();
     });
   });
 
