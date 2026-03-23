@@ -31,7 +31,8 @@ export class EvmAdapter implements BlockchainAdapter {
   private initWsProvider(): void {
     try {
       const ws = new WebSocketProvider(this.wsRpcUrl);
-      ws.websocket.addEventListener('error', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (ws.websocket as any).on?.('error', () => {
         // eslint-disable-next-line no-console
         console.warn(`[${this.chainName}] WS connection error`);
       });
