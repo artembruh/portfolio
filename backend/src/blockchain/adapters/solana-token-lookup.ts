@@ -1,10 +1,8 @@
 import { createSolanaRpc, isAddress, address } from '@solana/kit';
 import { Logger } from '@nestjs/common';
+import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
+import { TOKEN_2022_PROGRAM_ADDRESS } from '@solana-program/token-2022';
 import { fetchMetadataFromSeeds } from '@metaplex-foundation/mpl-token-metadata-kit';
-
-/** Canonical on-chain program addresses — these never change. */
-const TOKEN_PROGRAM_ADDRESS = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
-const TOKEN_2022_PROGRAM_ADDRESS = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
 import type { Chain } from '../chain.enum';
 import { TokenLookup } from '../interfaces/token-lookup.interface';
 import { TokenInfo } from '../dto/token-info.dto';
