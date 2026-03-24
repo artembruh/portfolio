@@ -27,7 +27,7 @@ export class BlockchainGateway
 
   onModuleInit(): void {
     for (const chain of this.blockchainService.getSupportedChains()) {
-      this.blockchainService.getAdapter(chain).onBlock((): void => {
+      this.blockchainService.getBlockSubscriber(chain).onBlock((): void => {
         this.emitBlockUpdate(chain);
       });
     }
@@ -35,7 +35,7 @@ export class BlockchainGateway
 
   private emitBlockUpdate(chain: string): void {
     if (!this.server) return;
-    const blockInfo = this.blockchainService.getAdapter(chain).getLatestBlock();
+    const blockInfo = this.blockchainService.getBlockSubscriber(chain).getLatestBlock();
     this.server.to(chain).emit('block_update', { chain, ...blockInfo });
   }
 
@@ -71,7 +71,7 @@ export class BlockchainGateway
     await client.join(chain);
     this.subscriptions.set(client.id, chain);
 
-    const blockInfo = this.blockchainService.getAdapter(chain).getLatestBlock();
+    const blockInfo = this.blockchainService.getBlockSubscriber(chain).getLatestBlock();
     client.emit('block_update', { chain, ...blockInfo });
   }
 }

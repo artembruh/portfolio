@@ -28,10 +28,10 @@ export class BlockchainController {
     }
 
     try {
-      return await this.blockchainService.getAdapter(chain.toLowerCase()).getTokenInfo(address);
+      return await this.blockchainService.getTokenLookup(chain.toLowerCase()).getTokenInfo(address);
     } catch (err) {
       this.logger.warn(`[${chain}] Token lookup failed for ${address}: ${getErrorMessage(err)}`);
-      throw new InternalServerErrorException(getErrorMessage(err));
+      throw new InternalServerErrorException('Token lookup failed');
     }
   }
 }

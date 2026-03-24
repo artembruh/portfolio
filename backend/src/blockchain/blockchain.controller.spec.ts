@@ -7,22 +7,18 @@ import { BlockchainService } from './services/blockchain.service';
 describe('BlockchainController', () => {
   let controller: BlockchainController;
 
-  const mockAdapter = {
+  const mockTokenLookup = {
     getTokenInfo: jest.fn(),
-    getLatestBlock: jest.fn(),
-    getAvgBlockTime: jest.fn(),
-    onBlock: jest.fn(),
-    destroy: jest.fn(),
   };
 
   const mockService = {
     getSupportedChains: jest.fn().mockReturnValue(['ethereum', 'base', 'bsc', 'solana']),
-    getAdapter: jest.fn(),
+    getTokenLookup: jest.fn(),
   };
 
   beforeEach(async () => {
-    mockAdapter.getTokenInfo.mockReset();
-    mockService.getAdapter.mockReset();
+    mockTokenLookup.getTokenInfo.mockReset();
+    mockService.getTokenLookup.mockReset();
     mockService.getSupportedChains.mockReturnValue(['ethereum', 'base', 'bsc', 'solana']);
 
     const module = await Test.createTestingModule({
@@ -41,15 +37,15 @@ describe('BlockchainController', () => {
 
   it('returns TokenInfo for a valid chain and address (BLKC-REST-01)', async () => {
     const tokenInfo = { name: 'Tether', symbol: 'USDT', decimals: 6, totalSupply: '1000000' };
-    mockAdapter.getTokenInfo.mockResolvedValue(tokenInfo);
-    mockService.getAdapter.mockReturnValue(mockAdapter);
+    mockTokenLookup.getTokenInfo.mockResolvedValue(tokenInfo);
+    mockService.getTokenLookup.mockReturnValue(mockTokenLookup);
 
     const result = await controller.getToken('ethereum', '0xdAC17F958D2ee523a2206206994597C13D831ec7');
 
     expect(result).toEqual(tokenInfo);
     expect(mockService.getSupportedChains).toHaveBeenCalled();
-    expect(mockService.getAdapter).toHaveBeenCalledWith('ethereum');
-    expect(mockAdapter.getTokenInfo).toHaveBeenCalledWith('0xdAC17F958D2ee523a2206206994597C13D831ec7');
+    expect(mockService.getTokenLookup).toHaveBeenCalledWith('ethereum');
+    expect(mockTokenLookup.getTokenInfo).toHaveBeenCalledWith('0xdAC17F958D2ee523a2206206994597C13D831ec7');
   });
 
   it('throws BadRequestException for unsupported chain (BLKC-REST-02)', async () => {
@@ -59,8 +55,8 @@ describe('BlockchainController', () => {
   });
 
   it('throws InternalServerErrorException when adapter.getTokenInfo rejects (BLKC-REST-03)', async () => {
-    mockAdapter.getTokenInfo.mockRejectedValue(new Error('RPC timeout'));
-    mockService.getAdapter.mockReturnValue(mockAdapter);
+    mockTokenLookup.getTokenInfo.mockRejectedValue(new Error('RPC timeout'));
+    mockService.getTokenLookup.mockReturnValue(mockTokenLookup);
 
     await expect(
       controller.getToken('ethereum', '0xdAC17F958D2ee523a2206206994597C13D831ec7'),

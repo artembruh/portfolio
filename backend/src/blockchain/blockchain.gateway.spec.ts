@@ -1,23 +1,21 @@
 import { BlockchainGateway } from './blockchain.gateway';
 import { BlockchainService } from './services/blockchain.service';
-import { BlockchainAdapter } from './interfaces/blockchain-adapter.interface';
+import { BlockSubscriber } from './interfaces/block-subscriber.interface';
 
 describe('BlockchainGateway', () => {
   let gateway: BlockchainGateway;
   let mockBlockchainService: jest.Mocked<BlockchainService>;
 
-  const mockEthAdapter: jest.Mocked<BlockchainAdapter> = {
+  const mockEthSubscriber: jest.Mocked<BlockSubscriber> = {
     getLatestBlock: jest.fn().mockReturnValue({ blockNumber: 12345, avgBlockTime: 12.1 }),
     getAvgBlockTime: jest.fn(),
-    getTokenInfo: jest.fn(),
     onBlock: jest.fn(),
     destroy: jest.fn(),
   };
 
-  const mockBaseAdapter: jest.Mocked<BlockchainAdapter> = {
+  const mockBaseSubscriber: jest.Mocked<BlockSubscriber> = {
     getLatestBlock: jest.fn().mockReturnValue({ blockNumber: 99999, avgBlockTime: 2.0 }),
     getAvgBlockTime: jest.fn(),
-    getTokenInfo: jest.fn(),
     onBlock: jest.fn(),
     destroy: jest.fn(),
   };
@@ -33,9 +31,9 @@ describe('BlockchainGateway', () => {
   beforeEach(() => {
     mockBlockchainService = {
       getSupportedChains: jest.fn().mockReturnValue(['ethereum', 'base']),
-      getAdapter: jest.fn().mockImplementation((chain: string) => {
-        if (chain === 'ethereum') return mockEthAdapter;
-        if (chain === 'base') return mockBaseAdapter;
+      getBlockSubscriber: jest.fn().mockImplementation((chain: string) => {
+        if (chain === 'ethereum') return mockEthSubscriber;
+        if (chain === 'base') return mockBaseSubscriber;
         throw new Error(`Unsupported chain: ${chain}`);
       }),
     } as unknown as jest.Mocked<BlockchainService>;
@@ -52,12 +50,11 @@ describe('BlockchainGateway', () => {
       emit: jest.fn(),
     };
 
-    // Reset per-adapter mocks
-    mockEthAdapter.getLatestBlock.mockReturnValue({ blockNumber: 12345, avgBlockTime: 12.1 });
-    mockEthAdapter.getTokenInfo.mockReset();
-    mockEthAdapter.onBlock.mockReset();
-    mockBaseAdapter.getLatestBlock.mockReturnValue({ blockNumber: 99999, avgBlockTime: 2.0 });
-    mockBaseAdapter.onBlock.mockReset();
+    // Reset per-subscriber mocks
+    mockEthSubscriber.getLatestBlock.mockReturnValue({ blockNumber: 12345, avgBlockTime: 12.1 });
+    mockEthSubscriber.onBlock.mockReset();
+    mockBaseSubscriber.getLatestBlock.mockReturnValue({ blockNumber: 99999, avgBlockTime: 2.0 });
+    mockBaseSubscriber.onBlock.mockReset();
 
     gateway = new BlockchainGateway(mockBlockchainService);
     gateway.server = mockServer as unknown as import('socket.io').Server;
@@ -150,15 +147,15 @@ describe('BlockchainGateway', () => {
       gateway.onModuleInit();
 
       expect(mockBlockchainService.getSupportedChains).toHaveBeenCalled();
-      expect(mockEthAdapter.onBlock).toHaveBeenCalledTimes(1);
-      expect(mockBaseAdapter.onBlock).toHaveBeenCalledTimes(1);
+      expect(mockEthSubscriber.onBlock).toHaveBeenCalledTimes(1);
+      expect(mockBaseSubscriber.onBlock).toHaveBeenCalledTimes(1);
     });
 
     it('onBlock callback emits block_update to chain room via server.to(chain) (BLKC-02, BLKC-03)', () => {
       gateway.onModuleInit();
 
       // Capture the callback registered for ethereum
-      const ethOnBlockCall = mockEthAdapter.onBlock.mock.calls[0];
+      const ethOnBlockCall = mockEthSubscriber.onBlock.mock.calls[0];
       expect(ethOnBlockCall).toBeDefined();
       const ethCallback = ethOnBlockCall![0];
 
