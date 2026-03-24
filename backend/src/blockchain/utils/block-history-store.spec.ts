@@ -85,5 +85,24 @@ describe('BlockHistoryStore', () => {
       // Delta: 0.4s -> rounded to 3 decimals = 0.4
       expect(store.getAvgBlockTime()).toBe(0.4);
     });
+
+    it('rounds to 1 decimal place when explicit decimalPlaces=1 is passed', () => {
+      const store = new BlockHistoryStore(10, 0, 1);
+      const now = 1000000000;
+      store.push(100, now - 27000); // -27s
+      store.push(101, now - 13500); // -13.5s
+      store.push(102, now);         // now
+      // Deltas: 13.5s, 13.5s -> avg = 13.5 -> rounded to 1 decimal = 13.5
+      expect(store.getAvgBlockTime()).toBe(13.5);
+    });
+
+    it('rounds to 3 decimal places when explicit decimalPlaces=3 is passed', () => {
+      const store = new BlockHistoryStore(10, 0.4, 3);
+      const now = 1000000000;
+      store.push(100, now - 400); // -400ms
+      store.push(101, now);       // now
+      // Delta: 0.4s -> rounded to 3 decimals = 0.4
+      expect(store.getAvgBlockTime()).toBe(0.4);
+    });
   });
 });

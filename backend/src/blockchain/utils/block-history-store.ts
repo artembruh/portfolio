@@ -5,11 +5,15 @@ export interface BlockRecord {
 
 export class BlockHistoryStore {
   private readonly history: BlockRecord[] = [];
+  private readonly decimalPlaces: number;
 
   constructor(
     private readonly cap: number,
     private readonly defaultAvgBlockTime: number,
-  ) {}
+    decimalPlaces?: number,
+  ) {
+    this.decimalPlaces = decimalPlaces ?? (defaultAvgBlockTime === 0 ? 1 : 3);
+  }
 
   push(blockNumber: number, timestamp: number): void {
     this.history.push({ blockNumber, timestamp });
@@ -33,11 +37,8 @@ export class BlockHistoryStore {
       deltas.push((this.history[i]!.timestamp - this.history[i - 1]!.timestamp) / 1000);
     }
     const avg = deltas.reduce((a, b) => a + b, 0) / deltas.length;
-    // EVM rounds to 1 decimal (defaultAvgBlockTime === 0), Solana to 3 decimals
-    if (this.defaultAvgBlockTime === 0) {
-      return Math.round(avg * 10) / 10;
-    }
-    return Math.round(avg * 1000) / 1000;
+    const factor = Math.pow(10, this.decimalPlaces);
+    return Math.round(avg * factor) / factor;
   }
 
   clear(): void {
