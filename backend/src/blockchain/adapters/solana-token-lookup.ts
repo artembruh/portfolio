@@ -46,6 +46,9 @@ function formatSupply(supply: string, decimals: number): string {
 }
 
 export class SolanaTokenLookup implements TokenLookup {
+  private static readonly DEFAULT_NAME = 'SPL Token';
+  private static readonly DEFAULT_SYMBOL = 'SPL';
+
   private readonly logger = new Logger(SolanaTokenLookup.name);
   private readonly rpc: ReturnType<typeof createSolanaRpc>;
 
@@ -79,7 +82,7 @@ export class SolanaTokenLookup implements TokenLookup {
       parsed?: { info?: SplMintInfo; type?: string };
     };
     const info = data.parsed?.info;
-    if (!info || typeof info.decimals !== 'number') {
+    if (!info) {
       throw new Error('Not a valid SPL token mint account');
     }
 
@@ -98,8 +101,7 @@ export class SolanaTokenLookup implements TokenLookup {
     decimals: number,
     supply: string,
   ): Promise<TokenInfo> {
-    let name = 'SPL Token';
-    let symbol = 'SPL';
+    const totalSupply = formatSupply(supply, decimals);
 
     try {
       const metadata = await withTimeout(
@@ -107,13 +109,21 @@ export class SolanaTokenLookup implements TokenLookup {
         RPC_TIMEOUT_MS,
         'fetchMetadataFromSeeds',
       );
-      name = metadata.data.name.replace(/\0/g, '').trim();
-      symbol = metadata.data.symbol.replace(/\0/g, '').trim();
-    } catch {
-      // Token may not have Metaplex metadata — use fallback
+      return {
+        name: metadata.data.name.replace(/\0/g, '').trim(),
+        symbol: metadata.data.symbol.replace(/\0/g, '').trim(),
+        decimals,
+        totalSupply,
+      };
+    } catch (err) {
+      this.logger.warn(`[${this.chainName}] Metaplex metadata not found for ${mint}: ${err instanceof Error ? err.message : String(err)}`);
+      return {
+        name: SolanaTokenLookup.DEFAULT_NAME,
+        symbol: SolanaTokenLookup.DEFAULT_SYMBOL,
+        decimals,
+        totalSupply,
+      };
     }
-
-    return { name, symbol, decimals, totalSupply: formatSupply(supply, decimals) };
   }
 
   private handleToken2022(
@@ -121,15 +131,23 @@ export class SolanaTokenLookup implements TokenLookup {
     decimals: number,
     supply: string,
   ): TokenInfo {
-    let name = 'SPL Token';
-    let symbol = 'SPL';
+    const totalSupply = formatSupply(supply, decimals);
 
     const metaExt = info.extensions?.find(isTokenMetadataExtension);
-    if (metaExt) {
-      name = metaExt.state.name.replace(/\0/g, '').trim();
-      symbol = metaExt.state.symbol.replace(/\0/g, '').trim();
+    if (!metaExt) {
+      return {
+        name: SolanaTokenLookup.DEFAULT_NAME,
+        symbol: SolanaTokenLookup.DEFAULT_SYMBOL,
+        decimals,
+        totalSupply,
+      };
     }
 
-    return { name, symbol, decimals, totalSupply: formatSupply(supply, decimals) };
+    return {
+      name: metaExt.state.name.replace(/\0/g, '').trim(),
+      symbol: metaExt.state.symbol.replace(/\0/g, '').trim(),
+      decimals,
+      totalSupply,
+    };
   }
 }
