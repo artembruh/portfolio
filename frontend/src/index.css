@@ -38,3 +38,13 @@
     background: transparent;
   }
 }
+
+@keyframes sweep {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 1000%; }
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.97; }
+}
