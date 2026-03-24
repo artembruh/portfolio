@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useBlockchainWs } from '@/features/blockchain/hooks/useBlockchainWs';
 import ChainTabs from '@/features/blockchain/components/ChainTabs';
 import BlockInfoPanel from '@/features/blockchain/components/BlockInfo';
@@ -11,21 +11,12 @@ import type { ChainId } from '@/types';
 
 export default function Workbench() {
   const [activeChain, setActiveChain] = useState<ChainId>('ethereum');
-  const [lookupError, setLookupError] = useState<string | null>(null);
-  const { status, blockInfo, tokenResult, isLookingUp, subscribeChain, lookupToken } =
+  const { status, blockInfo, tokenResult, isLookingUp, lookupError, subscribeChain, lookupToken } =
     useBlockchainWs();
 
   useEffect(() => {
     subscribeChain(activeChain);
   }, [activeChain, subscribeChain]);
-
-  const handleLookup = useCallback(
-    async (address: string) => {
-      setLookupError(null);
-      await lookupToken(activeChain, address);
-    },
-    [activeChain, lookupToken],
-  );
 
   return (
     <div>
@@ -44,10 +35,20 @@ export default function Workbench() {
       <TerminalDivider />
 
       <div className="text-terminal-xs opacity-40 uppercase tracking-wider mb-1.5">Token Lookup</div>
-      <TokenLookup onLookup={(addr) => void handleLookup(addr)} disabled={isLookingUp} />
+      <TokenLookup
+        chain={activeChain}
+        onLookup={(addr) => void lookupToken(activeChain, addr)}
+        disabled={isLookingUp}
+      />
 
       {isLookingUp && (
         <div className="text-terminal-sm opacity-50 mt-3">Scanning...</div>
+      )}
+
+      {lookupError && !isLookingUp && (
+        <div className="text-[var(--pip-tertiary)] text-terminal-sm mt-3">
+          Error: {lookupError}
+        </div>
       )}
 
       {tokenResult && !isLookingUp && (
@@ -63,7 +64,7 @@ export default function Workbench() {
         </TerminalCard>
       )}
 
-      {!tokenResult && !isLookingUp && (
+      {!tokenResult && !isLookingUp && !lookupError && (
         <div className="text-terminal-sm opacity-30 mt-3 text-center">
           Enter a contract address above to look up token info
         </div>

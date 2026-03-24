@@ -14,6 +14,7 @@ export function useBlockchainWs() {
   const [blockInfo, setBlockInfo] = useState<BlockInfo | null>(null);
   const [tokenResult, setTokenResult] = useState<TokenInfo | null>(null);
   const [isLookingUp, setIsLookingUp] = useState(false);
+  const [lookupError, setLookupError] = useState<string | null>(null);
 
   useEffect(() => {
     const socket = io(WS_URL, { autoConnect: true });
@@ -42,6 +43,7 @@ export function useBlockchainWs() {
 
   const lookupToken = useCallback(async (chain: string, address: string): Promise<void> => {
     setTokenResult(null);
+    setLookupError(null);
     setIsLookingUp(true);
     try {
       const res = await fetch(`${API_BASE}/api/blockchain/${chain}/token/${address}`);
@@ -51,17 +53,17 @@ export function useBlockchainWs() {
           typeof body === 'object' && body !== null && 'message' in body
             ? String((body as { message: unknown }).message)
             : `Error ${res.status}`;
-        console.error(`Token lookup failed: ${message}`);
+        setLookupError(message);
       } else {
         const data = (await res.json()) as TokenInfo;
         setTokenResult(data);
       }
     } catch (err) {
-      console.error('Network error during token lookup', err);
+      setLookupError('Network error — check your connection');
     } finally {
       setIsLookingUp(false);
     }
   }, []);
 
-  return { status, blockInfo, tokenResult, isLookingUp, subscribeChain, lookupToken };
+  return { status, blockInfo, tokenResult, isLookingUp, lookupError, subscribeChain, lookupToken };
 }
