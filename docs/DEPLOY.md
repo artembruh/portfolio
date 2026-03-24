@@ -49,9 +49,45 @@ nslookup yourdomain.com 8.8.8.8
 nslookup www.yourdomain.com 8.8.8.8
 ```
 
-## 3. Firewall (UFW)
+## 3. Firewall
 
 Configure before installing services to minimize exposure window.
+
+### 3a. Hetzner Cloud Firewall (Primary)
+
+Create a firewall in the Hetzner Cloud Console (**Firewalls > Create Firewall**) or via CLI:
+
+```bash
+# Install hcloud CLI (macOS)
+brew install hcloud
+
+# Create firewall
+hcloud firewall create --name portfolio-fw
+
+# Allow HTTP (any source)
+hcloud firewall add-rule portfolio-fw --direction in --protocol tcp --port 80 \
+  --source-ips 0.0.0.0/0 --source-ips ::/0 --description "HTTP — redirect + certbot"
+
+# Allow HTTPS (any source)
+hcloud firewall add-rule portfolio-fw --direction in --protocol tcp --port 443 \
+  --source-ips 0.0.0.0/0 --source-ips ::/0 --description "HTTPS"
+
+# Allow SSH (home IP only)
+hcloud firewall add-rule portfolio-fw --direction in --protocol tcp --port 22 \
+  --source-ips <YOUR_HOME_IP>/32 --description "SSH — home"
+
+# Attach to server
+hcloud firewall apply-to-resource portfolio-fw --type server --server <SERVER_NAME>
+
+# Verify
+hcloud firewall describe portfolio-fw
+```
+
+> **Tip:** If your home IP changes, update the SSH rule via Console or CLI before connecting.
+
+### 3b. UFW — Machine-Level Fallback
+
+Defence-in-depth: UFW stays as a second layer in case the cloud firewall is misconfigured or detached.
 
 ```bash
 # Defaults — block all incoming, allow all outgoing
