@@ -5,17 +5,22 @@ import SideNav from './SideNav';
 
 export default function PipBoyShell() {
   return (
-    <div className="min-h-screen p-2 md:p-4">
+    <div className="h-screen p-2 md:p-4">
       <div
-        className="relative w-full min-h-[calc(100vh-2rem)] border-[3px] border-[var(--pip-primary)] rounded-2xl overflow-hidden motion-safe:animate-[flicker_4s_ease-in-out_infinite]"
+        className="relative w-full h-full flex flex-col border-[3px] border-[var(--pip-primary)] rounded-2xl overflow-hidden motion-safe:animate-[flicker_4s_ease-in-out_infinite]"
         style={{ boxShadow: '0 0 30px rgba(255,213,44,0.12), inset 0 0 60px rgba(0,0,0,0.7)' }}
       >
         <StatusBar />
-        <div className="flex" style={{ height: 'calc(100vh - 2rem - 40px)' }}>
-          <SideNav />
-          <main className="flex-1 p-3 md:p-8 overflow-y-auto pb-16 md:pb-8">
+        <div className="flex flex-col md:flex-row flex-1 min-h-0">
+          <div className="hidden md:flex">
+            <SideNav />
+          </div>
+          <main className="flex-1 p-3 md:p-8 overflow-y-auto min-h-0">
             <Outlet />
           </main>
+          <div className="md:hidden shrink-0">
+            <SideNav />
+          </div>
         </div>
         <CrtOverlay />
       </div>

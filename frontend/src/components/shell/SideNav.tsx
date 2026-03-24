@@ -52,7 +52,7 @@ export default function SideNav() {
       </nav>
 
       {/* Mobile: bottom bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex border-t-2 border-[var(--pip-primary)] bg-[var(--pip-bg)]">
+      <nav className="md:hidden flex shrink-0 border-t-2 border-[var(--pip-primary)] bg-[var(--pip-bg)]">
         {NAV_ITEMS.map((item) => (
           <NavLink
             key={item.to}
