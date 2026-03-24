@@ -6,7 +6,7 @@ export default function TerminalButton({ children, className = '', ...props }: T
   return (
     <button
       {...props}
-      className={`bg-[var(--pip-primary)]/15 border border-[var(--pip-primary)] text-[var(--pip-primary)] font-[inherit] px-4 py-2 text-base rounded cursor-pointer hover:bg-[var(--pip-primary)]/25 disabled:opacity-30 disabled:cursor-not-allowed transition-colors ${className}`}
+      className={`bg-[var(--pip-primary)]/15 border border-[var(--pip-primary)] text-[var(--pip-primary)] font-[inherit] px-4 py-2 rounded cursor-pointer hover:bg-[var(--pip-primary)]/25 disabled:opacity-30 disabled:cursor-not-allowed transition-colors ${className}`}
     >
       {children}
     </button>

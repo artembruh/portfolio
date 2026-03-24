@@ -32,7 +32,7 @@ export default function Workbench() {
       <TerminalPrompt command="./workbench --interactive" />
 
       {status === 'disconnected' && (
-        <div className="text-[var(--pip-tertiary)] text-base mb-4">
+        <div className="text-[var(--pip-tertiary)] text-terminal-sm mb-4">
           ⚠ connection lost — refresh to reconnect
         </div>
       )}
@@ -43,28 +43,28 @@ export default function Workbench() {
 
       <TerminalDivider />
 
-      <div className="text-sm opacity-40 uppercase tracking-wider mb-1.5">Token Lookup</div>
+      <div className="text-terminal-xs opacity-40 uppercase tracking-wider mb-1.5">Token Lookup</div>
       <TokenLookup onLookup={(addr) => void handleLookup(addr)} disabled={isLookingUp} />
 
       {isLookingUp && (
-        <div className="text-base opacity-50 mt-3">Scanning...</div>
+        <div className="text-terminal-sm opacity-50 mt-3">Scanning...</div>
       )}
 
       {tokenResult && !isLookingUp && (
         <TerminalCard className="mt-3">
-          <div className="text-sm opacity-40 uppercase tracking-wider mb-1.5">Token Found</div>
-          <div className="flex justify-between text-lg">
+          <div className="text-terminal-xs opacity-40 uppercase tracking-wider mb-1.5">Token Found</div>
+          <div className="flex justify-between">
             <span>{tokenResult.name}</span>
             <span className="opacity-60">{tokenResult.symbol}</span>
           </div>
-          <div className="text-base opacity-50 mt-1.5">
+          <div className="text-terminal-sm opacity-50 mt-1.5">
             Decimals: {tokenResult.decimals} · Supply: {formatSupply(tokenResult.totalSupply)}
           </div>
         </TerminalCard>
       )}
 
       {!tokenResult && !isLookingUp && (
-        <div className="text-base opacity-30 mt-3 text-center">
+        <div className="text-terminal-sm opacity-30 mt-3 text-center">
           Enter a contract address above to look up token info
         </div>
       )}

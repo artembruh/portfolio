@@ -12,20 +12,20 @@ export default function Projects() {
         <TerminalCard key={exp.period}>
           <div className="flex justify-between items-start">
             <div>
-              <div className="text-lg">{exp.role}</div>
-              <div className="text-base opacity-50">{exp.company} · {exp.period}</div>
+              <div className="text-terminal-lg">{exp.role}</div>
+              <div className="text-terminal-sm opacity-50">{exp.company} · {exp.period}</div>
             </div>
             {index === 0 && (
-              <span className="text-sm border border-[var(--pip-primary)] px-1.5 py-0.5 rounded shrink-0">
+              <span className="text-terminal-xs border border-[var(--pip-primary)] px-1.5 py-0.5 rounded shrink-0">
                 CURRENT
               </span>
             )}
           </div>
-          <div className="text-base opacity-60 mt-2 leading-6">
+          <div className="text-terminal-sm opacity-60 mt-2 leading-6">
             {exp.description}
           </div>
           {exp.highlights.length > 0 && (
-            <ul className="text-base opacity-50 mt-2 space-y-1 pl-3 list-disc">
+            <ul className="text-terminal-sm opacity-50 mt-2 space-y-1 pl-3 list-disc">
               {exp.highlights.map((h) => (
                 <li key={h}>{h}</li>
               ))}

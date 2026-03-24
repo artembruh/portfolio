@@ -19,7 +19,7 @@ export default function BlockInfoPanel({ blockInfo, status }: BlockInfoProps) {
 
   return (
     <div>
-      <div className="text-sm opacity-40 uppercase tracking-wider mb-1.5">Live Block Data</div>
+      <div className="text-terminal-xs opacity-40 uppercase tracking-wider mb-1.5">Live Block Data</div>
       <div className="flex gap-2 flex-wrap">
         <TerminalStat
           value={blockInfo?.blockNumber?.toLocaleString() ?? '--'}

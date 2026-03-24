@@ -20,6 +20,7 @@
     background: var(--pip-bg);
     color: var(--pip-primary);
     font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(16px, 1.1vw, 20px);
     text-shadow: var(--pip-glow);
     min-height: 100vh;
   }
@@ -38,6 +39,14 @@
     background: transparent;
   }
 }
+
+/* Typography scale */
+.text-terminal { font-size: clamp(16px, 1.1vw, 20px); }
+.text-terminal-sm { font-size: clamp(14px, 0.9vw, 17px); }
+.text-terminal-xs { font-size: clamp(12px, 0.8vw, 15px); }
+.text-terminal-lg { font-size: clamp(20px, 1.4vw, 26px); }
+.text-terminal-xl { font-size: clamp(26px, 1.8vw, 34px); }
+.text-terminal-2xl { font-size: clamp(22px, 1.5vw, 28px); }
 
 @keyframes sweep {
   0% { background-position: 0 0; }
