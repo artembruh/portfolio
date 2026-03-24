@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { JsonRpcProvider, Contract, isAddress } from 'ethers';
+import { JsonRpcProvider, Contract, isAddress, isError } from 'ethers';
 import type { Chain } from '../chain.enum';
 import { TokenLookup } from '../interfaces/token-lookup.interface';
 import { TokenInfo } from '../dto/token-info.dto';
@@ -51,9 +51,12 @@ export class EvmTokenLookup implements TokenLookup {
         name: String(name),
         symbol: String(symbol),
         decimals: Number(decimals),
-        totalSupply: totalSupply.toString(),
+        totalSupply: (totalSupply / 10n ** BigInt(decimals)).toString(),
       };
     } catch (err) {
+      if (isError(err, 'BAD_DATA')) {
+        throw new Error('Not an ERC-20 token contract');
+      }
       throw new Error(`[${this.chainName}] ${getErrorMessage(err)}`, { cause: err });
     }
   }

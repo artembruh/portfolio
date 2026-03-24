@@ -15,7 +15,7 @@ interface WebSocketWithClose extends WebSocketLike {
 export class EvmBlockSubscriber implements BlockSubscriber {
   private readonly logger = new Logger(EvmBlockSubscriber.name);
   private wsProvider: WebSocketProvider | null = null;
-  private readonly blockHistory = new BlockHistoryStore(10, 0, 1);
+  private readonly blockHistory = new BlockHistoryStore(10, 0, 2);
   private readonly blockListeners: Array<() => void> = [];
   private readonly reconnect: ReconnectStrategy;
 

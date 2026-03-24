@@ -9,7 +9,7 @@ import { ReconnectStrategy } from '../utils/reconnect-strategy';
 export class SolanaBlockSubscriber implements BlockSubscriber {
   private readonly logger = new Logger(SolanaBlockSubscriber.name);
   private readonly rpcSubscriptions: ReturnType<typeof createSolanaRpcSubscriptions>;
-  private readonly blockHistory = new BlockHistoryStore(10, 0.4, 3);
+  private readonly blockHistory = new BlockHistoryStore(10, 0.4, 2);
   private readonly blockListeners: Array<() => void> = [];
   private readonly reconnect: ReconnectStrategy;
   private abortController: AbortController = new AbortController();

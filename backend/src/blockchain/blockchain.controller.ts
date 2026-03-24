@@ -3,6 +3,7 @@ import {
   Get,
   Param,
   ParseEnumPipe,
+  BadRequestException,
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
@@ -11,6 +12,15 @@ import { Chain } from './chain.enum';
 import { TokenLookupFactory } from './factories/token-lookup.factory';
 import { TokenInfo } from './dto/token-info.dto';
 import { getErrorMessage } from './utils/get-error-message';
+
+const CLIENT_ERROR_PATTERNS = [
+  'Invalid EVM address',
+  'Invalid Solana address',
+  'Not an ERC-20 token contract',
+  'Not an SPL token mint account',
+  'Not a valid SPL token mint account',
+  'Account not found',
+];
 
 @Controller('blockchain')
 export class BlockchainController {
@@ -27,7 +37,13 @@ export class BlockchainController {
     try {
       return await this.tokenLookup.get(chain).getTokenInfo(address);
     } catch (err) {
-      this.logger.warn(`[${chain}] Token lookup failed for ${address}: ${getErrorMessage(err)}`);
+      const message = getErrorMessage(err);
+
+      if (CLIENT_ERROR_PATTERNS.some((p) => message.includes(p))) {
+        throw new BadRequestException(message);
+      }
+
+      this.logger.warn(`[${chain}] Token lookup failed for ${address}: ${message}`);
       throw new InternalServerErrorException('Token lookup failed');
     }
   }
