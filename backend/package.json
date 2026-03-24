@@ -21,6 +21,8 @@
     "@nestjs/platform-socket.io": "^11.1.17",
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/websockets": "^11.1.17",
+    "@solana-program/token": "^0.12.0",
+    "@solana-program/token-2022": "^0.9.0",
     "@solana/kit": "2.3.0",
     "ethers": "^6.16.0",
     "reflect-metadata": "^0.2.2",
