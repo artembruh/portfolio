@@ -38,6 +38,8 @@ export function useBlockchainWs() {
 
   const subscribeChain = useCallback((chain: string) => {
     setBlockInfo(null);
+    setTokenResult(null);
+    setLookupError(null);
     socketRef.current?.emit('subscribe_chain', { chain });
   }, []);
 

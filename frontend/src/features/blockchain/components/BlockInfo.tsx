@@ -20,7 +20,7 @@ export default function BlockInfoPanel({ blockInfo, status }: BlockInfoProps) {
         </div>
         <div className="inline-block min-w-[80px] text-center p-2 border border-[var(--pip-primary)]/20 rounded m-1">
           <div className="text-terminal-2xl" style={{ textShadow: '0 0 8px #ffd52c66' }}>
-            <OdometerValue value={blockInfo?.avgBlockTime?.toFixed(1) ? `${blockInfo.avgBlockTime.toFixed(1)}s` : '--'} />
+            <OdometerValue value={blockInfo?.avgBlockTime?.toFixed(2) ? `${blockInfo.avgBlockTime.toFixed(2)}s` : '--'} />
           </div>
           <div className="text-terminal-xs opacity-40 mt-1 uppercase">AVG BLOCK TIME</div>
         </div>
