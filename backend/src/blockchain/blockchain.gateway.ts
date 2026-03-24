@@ -9,7 +9,8 @@ import {
 } from '@nestjs/websockets';
 import { OnModuleInit, Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { BlockchainService } from './services/blockchain.service';
+import { Chain } from './chain.enum';
+import { BlockSubscriberFactory } from './factories/block-subscriber.factory';
 
 @WebSocketGateway({ cors: { origin: process.env['WS_CORS_ORIGIN'] ?? '*' } })
 export class BlockchainGateway
@@ -20,22 +21,22 @@ export class BlockchainGateway
 
   private readonly logger = new Logger(BlockchainGateway.name);
 
-  /** Maps socketId -> chainName */
-  private readonly subscriptions = new Map<string, string>();
+  /** Each client subscribes to at most one chain at a time. */
+  private readonly subscriptions = new Map<string, Chain>();
 
-  constructor(private readonly blockchainService: BlockchainService) {}
+  constructor(private readonly blockSubscribers: BlockSubscriberFactory) {}
 
   onModuleInit(): void {
-    for (const chain of this.blockchainService.getSupportedChains()) {
-      this.blockchainService.getBlockSubscriber(chain).onBlock((): void => {
+    for (const chain of Object.values(Chain)) {
+      this.blockSubscribers.get(chain).onBlock((): void => {
         this.emitBlockUpdate(chain);
       });
     }
   }
 
-  private emitBlockUpdate(chain: string): void {
+  private emitBlockUpdate(chain: Chain): void {
     if (!this.server) return;
-    const blockInfo = this.blockchainService.getBlockSubscriber(chain).getLatestBlock();
+    const blockInfo = this.blockSubscribers.get(chain).getLatestBlock();
     this.server.to(chain).emit('block_update', { chain, ...blockInfo });
   }
 
@@ -57,21 +58,24 @@ export class BlockchainGateway
     @MessageBody() data: { chain?: string },
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
+    const chainValues = Object.values(Chain) as string[];
     const chain = data.chain?.toLowerCase();
-    if (!chain || !this.blockchainService.getSupportedChains().includes(chain)) {
+    if (!chain || !chainValues.includes(chain)) {
       client.emit('error', { message: `Unsupported chain: ${data.chain ?? ''}` });
       return;
     }
 
+    const validChain = chain as Chain;
+
     const previousChain = this.subscriptions.get(client.id);
-    if (previousChain && previousChain !== chain) {
+    if (previousChain && previousChain !== validChain) {
       await client.leave(previousChain);
     }
 
-    await client.join(chain);
-    this.subscriptions.set(client.id, chain);
+    await client.join(validChain);
+    this.subscriptions.set(client.id, validChain);
 
-    const blockInfo = this.blockchainService.getBlockSubscriber(chain).getLatestBlock();
-    client.emit('block_update', { chain, ...blockInfo });
+    const blockInfo = this.blockSubscribers.get(validChain).getLatestBlock();
+    client.emit('block_update', { chain: validChain, ...blockInfo });
   }
 }
