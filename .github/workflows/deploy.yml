@@ -69,8 +69,7 @@ jobs:
 
             # Pull and rebuild
             git pull origin main
-            docker compose down --remove-orphans
-            docker compose up -d --build
+            docker compose up -d --build --remove-orphans
 
             # Verify deploy (backend port not exposed on host — check via docker exec)
             sleep 10
