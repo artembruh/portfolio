@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
 import type { BlockInfo, ConnectionStatus } from '@/types';
 import TerminalStat from '@/components/ui/TerminalStat';
+import OdometerValue from '@/components/ui/OdometerValue';
 
 interface BlockInfoProps {
   blockInfo: BlockInfo | null;
@@ -8,27 +8,22 @@ interface BlockInfoProps {
 }
 
 export default function BlockInfoPanel({ blockInfo, status }: BlockInfoProps) {
-  const [flash, setFlash] = useState(false);
-
-  useEffect(() => {
-    if (!blockInfo?.blockNumber) return;
-    setFlash(true);
-    const t = setTimeout(() => setFlash(false), 300);
-    return () => clearTimeout(t);
-  }, [blockInfo?.blockNumber]);
-
   return (
     <div>
       <div className="text-terminal-xs opacity-40 uppercase tracking-wider mb-1.5">Live Block Data</div>
       <div className="flex gap-2 flex-wrap">
-        <TerminalStat
-          value={blockInfo?.blockNumber?.toLocaleString() ?? '--'}
-          label="BLOCK HEIGHT"
-        />
-        <TerminalStat
-          value={blockInfo?.avgBlockTime?.toFixed(1) ? `${blockInfo.avgBlockTime.toFixed(1)}s` : '--'}
-          label="AVG BLOCK TIME"
-        />
+        <div className="inline-block min-w-[80px] text-center p-2 border border-[var(--pip-primary)]/20 rounded m-1">
+          <div className="text-terminal-2xl" style={{ textShadow: '0 0 8px #ffd52c66' }}>
+            <OdometerValue value={blockInfo?.blockNumber?.toLocaleString() ?? '--'} />
+          </div>
+          <div className="text-terminal-xs opacity-40 mt-1 uppercase">BLOCK HEIGHT</div>
+        </div>
+        <div className="inline-block min-w-[80px] text-center p-2 border border-[var(--pip-primary)]/20 rounded m-1">
+          <div className="text-terminal-2xl" style={{ textShadow: '0 0 8px #ffd52c66' }}>
+            <OdometerValue value={blockInfo?.avgBlockTime?.toFixed(1) ? `${blockInfo.avgBlockTime.toFixed(1)}s` : '--'} />
+          </div>
+          <div className="text-terminal-xs opacity-40 mt-1 uppercase">AVG BLOCK TIME</div>
+        </div>
         <TerminalStat
           value={status === 'connected' ? '●' : '○'}
           label={status.toUpperCase()}

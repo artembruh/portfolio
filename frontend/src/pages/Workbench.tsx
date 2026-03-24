@@ -53,14 +53,11 @@ export default function Workbench() {
 
       {tokenResult && !isLookingUp && (
         <TerminalCard className="mt-3">
-          <div className="text-terminal-xs opacity-40 uppercase tracking-wider mb-1.5">Token Found</div>
-          <div className="flex justify-between">
-            <span>{tokenResult.name}</span>
-            <span className="opacity-60">{tokenResult.symbol}</span>
-          </div>
-          <div className="text-terminal-sm opacity-50 mt-1.5">
-            Decimals: {tokenResult.decimals} · Supply: {formatSupply(tokenResult.totalSupply)}
-          </div>
+          <div className="text-terminal-xs opacity-40 uppercase tracking-wider mb-2">Token Found</div>
+          <div><span className="text-terminal-sm opacity-50">Name: </span>{tokenResult.name}</div>
+          <div><span className="text-terminal-sm opacity-50">Symbol: </span>{tokenResult.symbol}</div>
+          <div><span className="text-terminal-sm opacity-50">Decimals: </span>{tokenResult.decimals}</div>
+          <div><span className="text-terminal-sm opacity-50">Supply: </span>{formatSupply(tokenResult.totalSupply)}</div>
         </TerminalCard>
       )}
 

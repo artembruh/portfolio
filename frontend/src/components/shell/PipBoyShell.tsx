@@ -13,7 +13,7 @@ export default function PipBoyShell() {
         <StatusBar />
         <div className="flex" style={{ height: 'calc(100vh - 2rem - 40px)' }}>
           <SideNav />
-          <main className="flex-1 p-8 overflow-y-auto pb-20 md:pb-8">
+          <main className="flex-1 p-3 md:p-8 overflow-y-auto pb-16 md:pb-8">
             <Outlet />
           </main>
         </div>
