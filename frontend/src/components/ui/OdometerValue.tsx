@@ -33,7 +33,8 @@ export default function OdometerValue({ value }: OdometerValueProps) {
     // Check if value is purely numeric (possibly with existing separators)
     const isNumeric = /^[\d\s,]+$/.test(value);
     const formatted = isNumeric ? padToGroupsOf3(value) : value;
-    const prevFormatted = /^[\d\s,]+$/.test(prevValue.current) ? padToGroupsOf3(prevValue.current) : prevValue.current;
+    const prev = prevValue.current ?? '';
+    const prevFormatted = /^[\d\s,]+$/.test(prev) ? padToGroupsOf3(prev) : prev;
 
     const prevChars = prevFormatted.split('');
     const nextChars = formatted.split('');
