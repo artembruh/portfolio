@@ -11,9 +11,9 @@ export default function PipBoyShell() {
         style={{ boxShadow: '0 0 30px rgba(255,213,44,0.12), inset 0 0 60px rgba(0,0,0,0.7)' }}
       >
         <StatusBar />
-        <div className="flex min-h-[80vh]">
+        <div className="flex" style={{ height: 'calc(100vh - 2rem - 40px)' }}>
           <SideNav />
-          <main className="flex-1 p-8 overflow-y-auto max-h-[85vh] pb-20 md:pb-8">
+          <main className="flex-1 p-8 overflow-y-auto pb-20 md:pb-8">
             <Outlet />
           </main>
         </div>
