@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { WebSocketProvider } from 'ethers';
 import type { WebSocketLike } from 'ethers';
+import { Chain } from '../chain.enum';
 import { BlockSubscriber } from '../interfaces/block-subscriber.interface';
 import { BlockInfo } from '../dto/block-info.dto';
 import { getErrorMessage } from '../utils/get-error-message';
@@ -20,7 +21,7 @@ export class EvmBlockSubscriber implements BlockSubscriber {
 
   constructor(
     private readonly wsRpcUrl: string,
-    private readonly chainName: string,
+    private readonly chainName: Chain,
   ) {
     this.reconnect = new ReconnectStrategy(() => this.connect());
     this.connect();

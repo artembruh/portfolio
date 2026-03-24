@@ -1,6 +1,7 @@
 import { createSolanaRpc, isAddress, address } from '@solana/kit';
 import { Logger } from '@nestjs/common';
 import { fetchMetadataFromSeeds } from '@metaplex-foundation/mpl-token-metadata-kit';
+import { Chain } from '../chain.enum';
 import { TokenLookup } from '../interfaces/token-lookup.interface';
 import { TokenInfo } from '../dto/token-info.dto';
 import { withTimeout } from '../utils/with-timeout';
@@ -62,7 +63,7 @@ export class SolanaTokenLookup implements TokenLookup {
 
   constructor(
     httpRpcUrl: string,
-    private readonly chainName: string,
+    private readonly chainName: Chain,
   ) {
     this.rpc = createSolanaRpc(httpRpcUrl);
   }

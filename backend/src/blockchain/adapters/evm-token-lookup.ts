@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { JsonRpcProvider, Contract, isAddress } from 'ethers';
+import { Chain } from '../chain.enum';
 import { TokenLookup } from '../interfaces/token-lookup.interface';
 import { TokenInfo } from '../dto/token-info.dto';
 import { withTimeout } from '../utils/with-timeout';
@@ -20,7 +21,7 @@ export class EvmTokenLookup implements TokenLookup {
 
   constructor(
     httpRpcUrl: string,
-    private readonly chainName: string,
+    private readonly chainName: Chain,
   ) {
     this.httpProvider = new JsonRpcProvider(httpRpcUrl);
   }

@@ -1,5 +1,6 @@
 import { createSolanaRpcSubscriptions } from '@solana/kit';
 import { Logger } from '@nestjs/common';
+import { Chain } from '../chain.enum';
 import { BlockSubscriber } from '../interfaces/block-subscriber.interface';
 import { BlockInfo } from '../dto/block-info.dto';
 import { BlockHistoryStore } from '../utils/block-history-store';
@@ -15,7 +16,7 @@ export class SolanaBlockSubscriber implements BlockSubscriber {
 
   constructor(
     private readonly wsRpcUrl: string,
-    private readonly chainName: string,
+    private readonly chainName: Chain,
   ) {
     this.rpcSubscriptions = createSolanaRpcSubscriptions(wsRpcUrl);
     this.reconnect = new ReconnectStrategy(() => this.startSlotSubscription());
