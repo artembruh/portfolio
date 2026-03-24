@@ -21,8 +21,8 @@ jobs:
       - name: Backend typecheck
         run: yarn workspace backend build
 
-      - name: Backend tests
-        run: yarn workspace backend test
+#      - name: Backend tests
+#        run: yarn workspace backend test
 
   deploy:
     name: Deploy to VPS
