@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import type { BlockInfo } from '@/types';
-import { cn } from '@/lib/utils';
+import type { BlockInfo, ConnectionStatus } from '@/types';
+import TerminalStat from '@/components/ui/TerminalStat';
 
 interface BlockInfoProps {
   blockInfo: BlockInfo | null;
+  status: ConnectionStatus;
 }
 
-export default function BlockInfoPanel({ blockInfo }: BlockInfoProps) {
+export default function BlockInfoPanel({ blockInfo, status }: BlockInfoProps) {
   const [flash, setFlash] = useState(false);
 
   useEffect(() => {
@@ -17,23 +18,21 @@ export default function BlockInfoPanel({ blockInfo }: BlockInfoProps) {
   }, [blockInfo?.blockNumber]);
 
   return (
-    <div className="bg-card rounded p-6 space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-muted-foreground text-sm">Latest Block:</span>
-        <span
-          className={cn(
-            'text-sm font-semibold transition-colors duration-300',
-            flash ? 'text-amber-400' : 'text-foreground',
-          )}
-        >
-          #{blockInfo?.blockNumber?.toLocaleString() ?? '--'}
-        </span>
-      </div>
-      <div className="flex items-center justify-between">
-        <span className="text-muted-foreground text-sm">Avg Block Time:</span>
-        <span className="text-sm font-semibold">
-          {blockInfo?.avgBlockTime?.toFixed(1) ?? '--'}s
-        </span>
+    <div>
+      <div className="text-[10px] opacity-40 uppercase tracking-wider mb-1.5">Live Block Data</div>
+      <div className="flex gap-2 flex-wrap">
+        <TerminalStat
+          value={blockInfo?.blockNumber?.toLocaleString() ?? '--'}
+          label="BLOCK HEIGHT"
+        />
+        <TerminalStat
+          value={blockInfo?.avgBlockTime?.toFixed(1) ? `${blockInfo.avgBlockTime.toFixed(1)}s` : '--'}
+          label="AVG BLOCK TIME"
+        />
+        <TerminalStat
+          value={status === 'connected' ? '●' : '○'}
+          label={status.toUpperCase()}
+        />
       </div>
     </div>
   );

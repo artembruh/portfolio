@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import TerminalInput from '@/components/ui/TerminalInput';
+import TerminalButton from '@/components/ui/TerminalButton';
 
 interface TokenLookupProps {
   onLookup: (address: string) => void;
@@ -17,21 +17,17 @@ export default function TokenLookup({ onLookup, disabled }: TokenLookupProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
-      <Input
+    <form onSubmit={handleSubmit} className="flex gap-2">
+      <TerminalInput
         value={address}
         onChange={(e) => setAddress(e.target.value)}
-        placeholder="0x... token contract address"
-        className="flex-1 font-mono"
+        placeholder="0x... contract address"
         disabled={disabled}
+        className="flex-1"
       />
-      <Button
-        type="submit"
-        disabled={disabled || !address.trim()}
-        className="bg-amber-400 text-gray-950 font-semibold hover:bg-amber-500 min-h-[44px] min-w-[60px]"
-      >
-        Go
-      </Button>
+      <TerminalButton type="submit" disabled={disabled || !address.trim()}>
+        SCAN
+      </TerminalButton>
     </form>
   );
 }
