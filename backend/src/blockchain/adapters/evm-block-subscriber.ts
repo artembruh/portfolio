@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { WebSocketProvider } from 'ethers';
 import type { WebSocketLike } from 'ethers';
-import { Chain } from '../chain.enum';
+import type { Chain } from '../chain.enum';
 import { BlockSubscriber } from '../interfaces/block-subscriber.interface';
 import { BlockInfo } from '../dto/block-info.dto';
 import { getErrorMessage } from '../utils/get-error-message';

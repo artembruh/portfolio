@@ -1,6 +1,6 @@
 import { createSolanaRpcSubscriptions } from '@solana/kit';
 import { Logger } from '@nestjs/common';
-import { Chain } from '../chain.enum';
+import type { Chain } from '../chain.enum';
 import { BlockSubscriber } from '../interfaces/block-subscriber.interface';
 import { BlockInfo } from '../dto/block-info.dto';
 import { BlockHistoryStore } from '../utils/block-history-store';

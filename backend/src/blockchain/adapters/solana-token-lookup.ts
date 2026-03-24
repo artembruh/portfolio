@@ -1,7 +1,7 @@
 import { createSolanaRpc, isAddress, address } from '@solana/kit';
 import { Logger } from '@nestjs/common';
 import { fetchMetadataFromSeeds } from '@metaplex-foundation/mpl-token-metadata-kit';
-import { Chain } from '../chain.enum';
+import type { Chain } from '../chain.enum';
 import { TokenLookup } from '../interfaces/token-lookup.interface';
 import { TokenInfo } from '../dto/token-info.dto';
 import { withTimeout } from '../utils/with-timeout';
