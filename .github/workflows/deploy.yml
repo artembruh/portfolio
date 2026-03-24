@@ -29,6 +29,21 @@ jobs:
     needs: check
     runs-on: ubuntu-latest
     steps:
+      - name: Get runner IP
+        id: ip
+        run: echo "runner_ip=$(curl -sf https://api.ipify.org)" >> "$GITHUB_OUTPUT"
+
+      - name: Open SSH in Hetzner firewall
+        env:
+          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+        run: |
+          pip install hcloud-cli -q 2>/dev/null || true
+          curl -sL https://github.com/hetznercloud/cli/releases/latest/download/hcloud-linux-amd64.tar.gz | tar xz -C /usr/local/bin
+          hcloud firewall add-rule portfolio-fw \
+            --direction in --protocol tcp --port 22 \
+            --source-ips "${{ steps.ip.outputs.runner_ip }}/32" \
+            --description "GitHub Actions deploy (ephemeral)"
+
       - name: Deploy via SSH
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
@@ -64,3 +79,13 @@ jobs:
 
             echo "Deploy successful"
           DEPLOY
+
+      - name: Close SSH in Hetzner firewall
+        if: always()
+        env:
+          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+        run: |
+          hcloud firewall delete-rule portfolio-fw \
+            --direction in --protocol tcp --port 22 \
+            --source-ips "${{ steps.ip.outputs.runner_ip }}/32" \
+            --description "GitHub Actions deploy (ephemeral)"
