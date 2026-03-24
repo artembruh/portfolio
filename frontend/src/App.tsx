@@ -1,14 +1,16 @@
 import { Routes, Route } from 'react-router-dom';
-import { Layout } from './components/layout/Layout';
-import Landing from './pages/Landing';
-import BlockchainExplorer from './pages/BlockchainExplorer';
+import PipBoyShell from './components/shell/PipBoyShell';
+import About from './pages/About';
+import Projects from './pages/Projects';
+import Workbench from './pages/Workbench';
 
 function App() {
   return (
     <Routes>
-      <Route element={<Layout />}>
-        <Route path="/" element={<Landing />} />
-        <Route path="/blockchain" element={<BlockchainExplorer />} />
+      <Route element={<PipBoyShell />}>
+        <Route path="/" element={<About />} />
+        <Route path="/projects" element={<Projects />} />
+        <Route path="/workbench" element={<Workbench />} />
       </Route>
     </Routes>
   );
