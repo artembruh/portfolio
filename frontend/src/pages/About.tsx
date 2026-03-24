@@ -55,8 +55,8 @@ export default function About() {
 
       {/* Mobile social links */}
       <div className="md:hidden mt-8 pt-4 border-t border-(--pip-primary)/15 text-terminal-sm opacity-75 space-y-2">
-        <a href="https://github.com/artembratchenko" target="_blank" rel="noopener noreferrer" className="block hover:opacity-100">{'>'} GitHub ↗</a>
-        <a href="https://linkedin.com/in/artembratchenko" target="_blank" rel="noopener noreferrer" className="block hover:opacity-100">{'>'} LinkedIn ↗</a>
+        <a href="https://github.com/artembruh" target="_blank" rel="noopener noreferrer" className="block hover:opacity-100">{'>'} GitHub ↗</a>
+        <a href="https://www.linkedin.com/in/artem-bratchenko/" target="_blank" rel="noopener noreferrer" className="block hover:opacity-100">{'>'} LinkedIn ↗</a>
         <a href="mailto:artem.bsns@gmail.com" className="block hover:opacity-100">{'>'} Email ↗</a>
       </div>
     </div>

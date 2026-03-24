@@ -7,8 +7,8 @@ const NAV_ITEMS = [
 ];
 
 const SOCIAL_LINKS = [
-  { href: 'https://github.com/artembratchenko', label: 'GitHub' },
-  { href: 'https://linkedin.com/in/artembratchenko', label: 'LinkedIn' },
+  { href: 'https://github.com/artembruh', label: 'GitHub' },
+  { href: 'https://www.linkedin.com/in/artem-bratchenko/', label: 'LinkedIn' },
   { href: 'mailto:artem.bsns@gmail.com', label: 'Email' },
 ];
 
