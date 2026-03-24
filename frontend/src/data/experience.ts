@@ -60,8 +60,9 @@ export const experience: Experience[] = [
     description: 'Global ticket marketplace',
     tech: ['Node.js', 'TypeScript', 'Express', 'AWS Serverless', 'DynamoDB'],
     highlights: [
-      'Developed microservices for a global event ticket aggregation platform, enabling users to discover and purchase performance tickets across worldwide venues',
-      'Maintained and improved legacy codebase while building new serverless services on AWS, conducted code reviews and ensured code quality standards',
+      'Built microservices for a global event ticket aggregation platform',
+      'Built new serverless services on AWS, migrating from legacy monolith',
+      'Conducted code reviews and maintained code quality standards',
     ],
   },
   {
@@ -71,8 +72,9 @@ export const experience: Experience[] = [
     description: 'Blockchain (ICP/NFT) & Analytics',
     tech: ['Node.js', 'TypeScript', 'React', 'PostgreSQL', 'AWS Serverless', 'Shopify'],
     highlights: [
-      'Built a backend middleware for an NFT-based product authenticity platform — receiving hi-res images, storing them on ICP blockchain, and generating certificates of authenticity as NFTs',
-      'Developed serverless analytics dashboard for e-commerce merchants, integrating with Shopify Platform to provide granular user engagement insights',
+      'Built NFT-based product authenticity backend — image processing, ICP blockchain storage, certificate generation',
+      'Serverless analytics dashboard for e-commerce merchants with Shopify integration',
+      'Designed REST APIs and data pipelines for cross-platform data synchronization',
     ],
   },
   {
@@ -82,8 +84,9 @@ export const experience: Experience[] = [
     description: 'AI-powered customer service',
     tech: ['Python', 'Node.js', 'TypeScript', 'PostgreSQL', 'AWS Serverless'],
     highlights: [
-      'Developed serverless backend in Python for an AI-powered customer service platform that automated responses using pre-trained ML models, improving agent efficiency',
-      'Migrated legacy chatbot implementations to modern architecture and integrated with leading e-commerce platforms',
+      'Built serverless Python backend for AI customer service platform with pre-trained ML models',
+      'Migrated legacy chatbots to modern architecture',
+      'Integrated with leading e-commerce platforms (Shopify, WooCommerce)',
     ],
   },
   {
@@ -93,8 +96,9 @@ export const experience: Experience[] = [
     description: 'Cloud cost management SaaS',
     tech: ['Golang', 'Node.js', 'TypeScript', 'Kubernetes', 'GCP', 'AWS', 'Azure', 'PostgreSQL'],
     highlights: [
-      'Contributed to a cloud-native cost management platform used by large enterprises to monitor and optimize infrastructure spending across GCP, AWS, and Azure',
-      'Implemented core features, wrote and optimized complex SQL queries, and worked directly with multi-cloud provider APIs and Kubernetes clusters',
+      'Cloud-native cost management platform for enterprises across GCP, AWS, and Azure',
+      'Optimized complex SQL queries for infrastructure spending analytics',
+      'Worked directly with multi-cloud provider APIs and Kubernetes clusters',
     ],
   },
   {
@@ -104,7 +108,8 @@ export const experience: Experience[] = [
     description: 'Early career backend development',
     tech: ['Node.js', 'JavaScript', 'SQL'],
     highlights: [
-      'Started professional career developing backend services and APIs, building foundational expertise in Node.js, relational databases, and server-side architecture',
+      'Backend services and APIs in Node.js with relational databases',
+      'Built foundational expertise in server-side architecture and system design',
     ],
   },
 ];
