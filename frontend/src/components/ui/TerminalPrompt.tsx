@@ -4,7 +4,7 @@ interface TerminalPromptProps {
 
 export default function TerminalPrompt({ command }: TerminalPromptProps) {
   return (
-    <div className="text-[13px] opacity-50 mb-2.5">
+    <div className="text-lg opacity-50 mb-2.5">
       {'>'} {command}
     </div>
   );

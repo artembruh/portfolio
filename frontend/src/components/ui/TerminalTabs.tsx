@@ -11,7 +11,7 @@ export default function TerminalTabs<T extends string>({ tabs, active, onSelect 
         <button
           key={tab.id}
           onClick={() => onSelect(tab.id)}
-          className={`px-3.5 py-2 text-[11px] border-b-2 transition-colors ${
+          className={`px-3.5 py-2 text-base border-b-2 transition-colors ${
             tab.id === active
               ? 'border-[var(--pip-primary)] opacity-100 bg-[var(--pip-primary)]/[0.07]'
               : 'border-transparent opacity-40 hover:opacity-70'
