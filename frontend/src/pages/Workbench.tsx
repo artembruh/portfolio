@@ -23,7 +23,7 @@ export default function Workbench() {
       <TerminalPrompt command="./workbench --interactive" />
 
       {status === 'disconnected' && (
-        <div className="text-[var(--pip-tertiary)] text-terminal-sm mb-4">
+        <div className="text-(--pip-tertiary) text-terminal-sm mb-4">
           ⚠ connection lost — refresh to reconnect
         </div>
       )}
@@ -34,7 +34,7 @@ export default function Workbench() {
 
       <TerminalDivider />
 
-      <div className="text-terminal-xs opacity-40 uppercase tracking-wider mb-1.5">Token Lookup</div>
+      <div className="text-terminal-sm opacity-75 uppercase tracking-wider mb-2">Token Lookup</div>
       <TokenLookup
         chain={activeChain}
         onLookup={(addr) => void lookupToken(activeChain, addr)}
@@ -42,27 +42,27 @@ export default function Workbench() {
       />
 
       {isLookingUp && (
-        <div className="text-terminal-sm opacity-50 mt-3">Scanning...</div>
+        <div className="text-terminal-sm opacity-75 mt-3">Scanning...</div>
       )}
 
       {lookupError && !isLookingUp && (
-        <div className="text-[var(--pip-tertiary)] text-terminal-sm mt-3">
+        <div className="text-(--pip-tertiary) text-terminal-sm mt-3">
           Error: {lookupError}
         </div>
       )}
 
       {tokenResult && !isLookingUp && (
         <TerminalCard className="mt-3">
-          <div className="text-terminal-xs opacity-40 uppercase tracking-wider mb-2">Token Found</div>
-          <div><span className="text-terminal-sm opacity-50">Name: </span>{tokenResult.name}</div>
-          <div><span className="text-terminal-sm opacity-50">Symbol: </span>{tokenResult.symbol}</div>
-          <div><span className="text-terminal-sm opacity-50">Decimals: </span>{tokenResult.decimals}</div>
-          <div><span className="text-terminal-sm opacity-50">Supply: </span>{formatSupply(tokenResult.totalSupply)}</div>
+          <div className="text-terminal-sm opacity-75 uppercase tracking-wider mb-3">Token Found</div>
+          <div className="text-terminal-lg mb-1"><span className="opacity-75">Name: </span>{tokenResult.name}</div>
+          <div className="text-terminal-lg mb-1"><span className="opacity-75">Symbol: </span>{tokenResult.symbol}</div>
+          <div className="text-terminal-lg mb-1"><span className="opacity-75">Decimals: </span>{tokenResult.decimals}</div>
+          <div className="text-terminal-lg"><span className="opacity-75">Supply: </span>{formatSupply(tokenResult.totalSupply)}</div>
         </TerminalCard>
       )}
 
       {!tokenResult && !isLookingUp && !lookupError && (
-        <div className="text-terminal-sm opacity-30 mt-3 text-center">
+        <div className="text-terminal-sm opacity-50 mt-3 text-center">
           Enter a contract address above to look up token info
         </div>
       )}
