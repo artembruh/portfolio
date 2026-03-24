@@ -6,7 +6,7 @@ interface TerminalCardProps {
 export default function TerminalCard({ children, className = '' }: TerminalCardProps) {
   return (
     <div
-      className={`border border-[var(--pip-primary)]/20 rounded p-3 mb-2 bg-[var(--pip-primary)]/[0.03] hover:bg-[var(--pip-primary)]/[0.08] transition-colors ${className}`}
+      className={`border border-(--pip-primary)/20 rounded p-3 mb-2 bg-(--pip-primary)/3 hover:bg-(--pip-primary)/8 transition-colors ${className}`}
     >
       {children}
     </div>

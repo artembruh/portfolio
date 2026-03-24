@@ -42,8 +42,8 @@
 
 /* Typography scale */
 .text-terminal { font-size: clamp(16px, 1.1vw, 24px); }
-.text-terminal-sm { font-size: clamp(18px, 0.9vw, 21px); }
-.text-terminal-xs { font-size: clamp(21px, 0.8vw, 24px); }
+.text-terminal-xs { font-size: clamp(18px, 0.9vw, 21px); }
+.text-terminal-sm { font-size: clamp(21px, 0.8vw, 24px); }
 .text-terminal-lg { font-size: clamp(24px, 1.4vw, 29px); }
 .text-terminal-xl { font-size: clamp(29px, 1.8vw, 34px); }
 .text-terminal-2xl { font-size: clamp(34px, 1.5vw, 38px); }
