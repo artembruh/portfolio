@@ -1,5 +1,7 @@
 import { createSolanaRpc, isAddress, address } from '@solana/kit';
 import { Logger } from '@nestjs/common';
+import { TOKEN_PROGRAM_ADDRESS } from '@solana-program/token';
+import { TOKEN_2022_PROGRAM_ADDRESS } from '@solana-program/token-2022';
 import { fetchMetadataFromSeeds } from '@metaplex-foundation/mpl-token-metadata-kit';
 import type { Chain } from '../chain.enum';
 import { TokenLookup } from '../interfaces/token-lookup.interface';
@@ -39,22 +41,8 @@ function isTokenMetadataExtension(
   );
 }
 
-interface SplParsedMintData {
-  parsed: {
-    info: SplMintInfo;
-    type: string;
-  };
-  program: string;
-  space: bigint;
-}
-
-function isSplParsedData(d: unknown): d is SplParsedMintData {
-  return (
-    typeof d === 'object' &&
-    d !== null &&
-    'parsed' in d &&
-    typeof (d as SplParsedMintData).parsed?.info?.decimals === 'number'
-  );
+function formatSupply(supply: string, decimals: number): string {
+  return (BigInt(supply) / 10n ** BigInt(decimals)).toString();
 }
 
 export class SolanaTokenLookup implements TokenLookup {
@@ -80,35 +68,68 @@ export class SolanaTokenLookup implements TokenLookup {
       RPC_TIMEOUT_MS,
       'getAccountInfo',
     );
-    const data = accountInfo.value?.data;
-    if (!isSplParsedData(data)) {
+
+    const account = accountInfo.value;
+    if (!account) {
+      throw new Error('Account not found');
+    }
+
+    const owner = account.owner;
+    const data = account.data as {
+      parsed?: { info?: SplMintInfo; type?: string };
+    };
+    const info = data.parsed?.info;
+    if (!info || typeof info.decimals !== 'number') {
       throw new Error('Not a valid SPL token mint account');
     }
-    const { decimals, supply } = data.parsed.info;
 
-    let name = 'Unknown Token';
-    let symbol = 'UNKNOWN';
-
-    if (data.program === 'spl-token-2022') {
-      const metaExt = data.parsed.info.extensions?.find(isTokenMetadataExtension);
-      if (metaExt) {
-        name = metaExt.state.name.trim();
-        symbol = metaExt.state.symbol.trim();
-      }
-    } else {
-      try {
-        const metadata = await withTimeout(
-          fetchMetadataFromSeeds(this.rpc, { mint }),
-          RPC_TIMEOUT_MS,
-          'fetchMetadataFromSeeds',
-        );
-        name = metadata.data.name.replace(/\0/g, '').trim();
-        symbol = metadata.data.symbol.replace(/\0/g, '').trim();
-      } catch {
-        // Token may not have Metaplex metadata — use fallback
-      }
+    if (owner === TOKEN_PROGRAM_ADDRESS) {
+      return this.handleToken(mint, info.decimals, info.supply);
+    }
+    if (owner === TOKEN_2022_PROGRAM_ADDRESS) {
+      return this.handleToken2022(info, info.decimals, info.supply);
     }
 
-    return { name, symbol, decimals, totalSupply: supply };
+    throw new Error('Not an SPL token mint account');
+  }
+
+  private async handleToken(
+    mint: ReturnType<typeof address>,
+    decimals: number,
+    supply: string,
+  ): Promise<TokenInfo> {
+    let name = 'SPL Token';
+    let symbol = 'SPL';
+
+    try {
+      const metadata = await withTimeout(
+        fetchMetadataFromSeeds(this.rpc, { mint }),
+        RPC_TIMEOUT_MS,
+        'fetchMetadataFromSeeds',
+      );
+      name = metadata.data.name.replace(/\0/g, '').trim();
+      symbol = metadata.data.symbol.replace(/\0/g, '').trim();
+    } catch {
+      // Token may not have Metaplex metadata — use fallback
+    }
+
+    return { name, symbol, decimals, totalSupply: formatSupply(supply, decimals) };
+  }
+
+  private handleToken2022(
+    info: SplMintInfo,
+    decimals: number,
+    supply: string,
+  ): TokenInfo {
+    let name = 'SPL Token';
+    let symbol = 'SPL';
+
+    const metaExt = info.extensions?.find(isTokenMetadataExtension);
+    if (metaExt) {
+      name = metaExt.state.name.replace(/\0/g, '').trim();
+      symbol = metaExt.state.symbol.replace(/\0/g, '').trim();
+    }
+
+    return { name, symbol, decimals, totalSupply: formatSupply(supply, decimals) };
   }
 }
