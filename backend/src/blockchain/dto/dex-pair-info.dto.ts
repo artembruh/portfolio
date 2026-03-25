@@ -3,6 +3,7 @@ export interface DexPairInfo {
   dexName: string;
   url: string;
   pairType: string | null;
+  quoteToken: { name: string; symbol: string };
   priceUsd: string;
   priceNative: string;
   marketCap: number;

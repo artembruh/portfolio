@@ -7,11 +7,19 @@ const DEXSCREENER_BASE_URL = 'https://api.dexscreener.com/token-pairs/v1';
 const DEXSCREENER_TIMEOUT_MS = 10_000;
 const MIN_LIQUIDITY_USD = 3_000;
 
+interface DexScreenerToken {
+  address: string;
+  name: string;
+  symbol: string;
+}
+
 interface DexScreenerPair {
   pairAddress: string;
   dexId: string;
   url: string;
   labels?: string[];
+  baseToken: DexScreenerToken;
+  quoteToken: DexScreenerToken;
   priceUsd?: string;
   priceNative?: string;
   marketCap?: number;
@@ -22,6 +30,15 @@ interface DexScreenerPair {
 @Injectable()
 export class DexScreenerService {
   private readonly logger = new Logger(DexScreenerService.name);
+
+  private resolveQuoteToken(
+    pair: DexScreenerPair,
+    tokenAddress: string,
+  ): { name: string; symbol: string } {
+    const isBase = pair.baseToken.address.toLowerCase() === tokenAddress.toLowerCase();
+    const quote = isBase ? pair.quoteToken : pair.baseToken;
+    return { name: quote.name, symbol: quote.symbol };
+  }
 
   async getPairs(chain: Chain, tokenAddress: string): Promise<DexPairInfo[]> {
     let raw: DexScreenerPair[];
@@ -47,6 +64,7 @@ export class DexScreenerService {
 
     return raw
       .filter((p) => {
+        if (!p.marketCap || !p.priceUsd || p.priceUsd === '0') return false;
         const liq = p.liquidity?.usd;
         return liq === undefined || liq === null || liq >= MIN_LIQUIDITY_USD;
       })
@@ -61,6 +79,7 @@ export class DexScreenerService {
         dexName: p.dexId,
         url: p.url,
         pairType: p.labels?.[0] ?? null,
+        quoteToken: this.resolveQuoteToken(p, tokenAddress),
         priceUsd: p.priceUsd ?? '0',
         priceNative: p.priceNative ?? '0',
         marketCap: p.marketCap ?? 0,
