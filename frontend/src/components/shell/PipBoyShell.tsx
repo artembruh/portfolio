@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import CrtOverlay from './CrtOverlay';
 import StatusBar from './StatusBar';
 import SideNav from './SideNav';
@@ -7,6 +7,12 @@ import BootScreen from './BootScreen';
 
 export default function PipBoyShell() {
   const [booted, setBooted] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    mainRef.current?.scrollTo(0, 0);
+  }, [location.pathname]);
 
   return (
     <div className="h-dvh p-2 md:p-4">
@@ -24,7 +30,7 @@ export default function PipBoyShell() {
             <div className="hidden md:flex">
               <SideNav />
             </div>
-            <main className="flex-1 p-3 md:p-8 overflow-y-auto min-h-0">
+            <main ref={mainRef} className="flex-1 p-3 md:p-8 overflow-y-auto min-h-0">
               <Outlet />
             </main>
             <div className="md:hidden shrink-0">
