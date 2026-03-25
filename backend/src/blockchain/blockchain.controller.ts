@@ -10,7 +10,9 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { Chain } from './chain.enum';
 import { TokenLookupFactory } from './factories/token-lookup.factory';
+import { DexScreenerService } from './services/dex-screener.service';
 import { TokenInfo } from './dto/token-info.dto';
+import { DexPairInfo } from './dto/dex-pair-info.dto';
 import { getErrorMessage } from './utils/get-error-message';
 import { validateTokenAddress } from './utils/validate-address';
 
@@ -25,7 +27,10 @@ const CLIENT_ERROR_PATTERNS = [
 export class BlockchainController {
   private readonly logger = new Logger(BlockchainController.name);
 
-  constructor(private readonly tokenLookup: TokenLookupFactory) {}
+  constructor(
+    private readonly tokenLookup: TokenLookupFactory,
+    private readonly dexScreener: DexScreenerService,
+  ) {}
 
   @Get(':chain/token/:address')
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
@@ -46,5 +51,15 @@ export class BlockchainController {
       this.logger.warn(`[${chain}] Token lookup failed for ${address}: ${message}`);
       throw new InternalServerErrorException('Token lookup failed');
     }
+  }
+
+  @Get(':chain/token/:address/pairs')
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  async getPairs(
+    @Param('chain', new ParseEnumPipe(Chain)) chain: Chain,
+    @Param('address') address: string,
+  ): Promise<DexPairInfo[]> {
+    validateTokenAddress(chain, address);
+    return this.dexScreener.getPairs(chain, address);
   }
 }
