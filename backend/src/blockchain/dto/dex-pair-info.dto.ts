@@ -2,7 +2,7 @@ export interface DexPairInfo {
   pairAddress: string;
   dexName: string;
   url: string;
-  pairType: string;
+  pairType: string | null;
   priceUsd: string;
   priceNative: string;
   marketCap: number;

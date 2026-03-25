@@ -3,7 +3,7 @@ import { Chain } from '../chain.enum';
 import { DexPairInfo } from '../dto/dex-pair-info.dto';
 import { withTimeout } from '../utils/with-timeout';
 
-const DEXSCREENER_BASE_URL = 'https://api.dexscreener.com/tokens/v1';
+const DEXSCREENER_BASE_URL = 'https://api.dexscreener.com/token-pairs/v1';
 const DEXSCREENER_TIMEOUT_MS = 10_000;
 const MIN_LIQUIDITY_USD = 3_000;
 
@@ -46,7 +46,10 @@ export class DexScreenerService {
     if (!Array.isArray(raw)) return [];
 
     return raw
-      .filter((p) => (p.liquidity?.usd ?? 0) >= MIN_LIQUIDITY_USD)
+      .filter((p) => {
+        const liq = p.liquidity?.usd;
+        return liq === undefined || liq === null || liq >= MIN_LIQUIDITY_USD;
+      })
       .sort((a, b) => {
         const aVolume = a.volume?.h24 ?? 0;
         const bVolume = b.volume?.h24 ?? 0;
@@ -57,7 +60,7 @@ export class DexScreenerService {
         pairAddress: p.pairAddress,
         dexName: p.dexId,
         url: p.url,
-        pairType: p.labels?.[0] ?? 'unknown',
+        pairType: p.labels?.[0] ?? null,
         priceUsd: p.priceUsd ?? '0',
         priceNative: p.priceNative ?? '0',
         marketCap: p.marketCap ?? 0,
