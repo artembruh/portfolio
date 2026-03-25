@@ -16,13 +16,16 @@
     padding: 0;
     box-sizing: border-box;
   }
+  html, body {
+    height: 100dvh;
+    overflow: hidden;
+  }
   body {
     background: var(--pip-bg);
     color: var(--pip-primary);
     font-family: 'Share Tech Mono', monospace;
     font-size: clamp(16px, 1.1vw, 20px);
     text-shadow: var(--pip-glow);
-    min-height: 100vh;
   }
   ::selection {
     background: var(--pip-primary);

@@ -9,7 +9,7 @@ export default function PipBoyShell() {
   const [booted, setBooted] = useState(false);
 
   return (
-    <div className="h-screen p-2 md:p-4">
+    <div className="h-dvh p-2 md:p-4">
       <div
         className="relative w-full h-full flex flex-col border-[3px] border-[var(--pip-primary)] rounded-2xl overflow-hidden crt-power-on"
         style={{ boxShadow: '0 0 30px rgba(255,213,44,0.12), inset 0 0 60px rgba(0,0,0,0.7)' }}
