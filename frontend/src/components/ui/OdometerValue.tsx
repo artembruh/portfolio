@@ -61,7 +61,7 @@ export default function OdometerValue({ value }: OdometerValueProps) {
       {displayChars.map(({ char, key }) => (
         <span
           key={key}
-          className="inline-block animate-[slideUp_0.3s_ease-out]"
+          className="inline-block leading-none py-[1px] animate-[colorFlash_0.5s_ease-out]"
         >
           {char}
         </span>

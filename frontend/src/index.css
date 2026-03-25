@@ -70,6 +70,17 @@
   }
 }
 
+@keyframes colorFlash {
+  0% {
+    background-color: var(--pip-primary);
+    color: var(--pip-bg);
+  }
+  100% {
+    background-color: transparent;
+    color: var(--pip-primary);
+  }
+}
+
 @keyframes pulse-glow {
   0%, 100% {
     box-shadow: 0 0 4px var(--pip-primary), 0 0 8px var(--pip-primary);
