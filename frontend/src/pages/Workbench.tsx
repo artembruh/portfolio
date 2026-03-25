@@ -3,6 +3,7 @@ import { useBlockchainWs } from '@/features/blockchain/hooks/useBlockchainWs';
 import ChainTabs from '@/features/blockchain/components/ChainTabs';
 import BlockInfoPanel from '@/features/blockchain/components/BlockInfo';
 import TokenLookup from '@/features/blockchain/components/TokenLookup';
+import PairCard from '@/features/blockchain/components/PairCard';
 import TerminalPrompt from '@/components/ui/TerminalPrompt';
 import TerminalCard from '@/components/ui/TerminalCard';
 import TerminalDivider from '@/components/ui/TerminalDivider';
@@ -11,7 +12,7 @@ import type { ChainId } from '@/types';
 
 export default function Workbench() {
   const [activeChain, setActiveChain] = useState<ChainId>('ethereum');
-  const { status, blockInfo, tokenResult, isLookingUp, lookupError, subscribeChain, lookupToken } =
+  const { status, blockInfo, tokenResult, pairs, isLookingUp, isFetchingPairs, lookupError, subscribeChain, lookupToken } =
     useBlockchainWs();
 
   useEffect(() => {
@@ -59,6 +60,31 @@ export default function Workbench() {
           <div className="text-terminal-lg mb-1"><span className="opacity-75">Decimals: </span>{tokenResult.decimals}</div>
           <div className="text-terminal-lg"><span className="opacity-75">Supply: </span>{formatSupply(tokenResult.totalSupply)}</div>
         </TerminalCard>
+      )}
+
+      {tokenResult && !isLookingUp && (
+        <>
+          {isFetchingPairs && (
+            <div className="text-terminal-sm opacity-75 mt-3">Fetching DEX pairs...</div>
+          )}
+
+          {pairs.length > 0 && (
+            <div className="mt-4">
+              <div className="text-terminal-sm opacity-75 uppercase tracking-wider mb-3">
+                DEX Pairs ({pairs.length})
+              </div>
+              <div className="flex flex-col gap-2">
+                {pairs.map((pair) => (
+                  <PairCard key={pair.pairAddress} pair={pair} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!isFetchingPairs && pairs.length === 0 && (
+            <div className="text-terminal-sm opacity-50 mt-3">No DEX pairs found</div>
+          )}
+        </>
       )}
 
       {!tokenResult && !isLookingUp && !lookupError && (

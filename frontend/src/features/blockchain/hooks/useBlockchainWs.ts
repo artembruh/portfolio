@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import type { BlockInfo, TokenInfo, ConnectionStatus } from '@/types';
+import type { BlockInfo, TokenInfo, DexPairInfo, ConnectionStatus } from '@/types';
 
 const WS_URL =
   import.meta.env.MODE === 'production' ? undefined : 'http://localhost:3000';
@@ -15,6 +15,8 @@ export function useBlockchainWs() {
   const [tokenResult, setTokenResult] = useState<TokenInfo | null>(null);
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [lookupError, setLookupError] = useState<string | null>(null);
+  const [pairs, setPairs] = useState<DexPairInfo[]>([]);
+  const [isFetchingPairs, setIsFetchingPairs] = useState(false);
 
   useEffect(() => {
     const socket = io(WS_URL, { autoConnect: true });
@@ -40,12 +42,30 @@ export function useBlockchainWs() {
     setBlockInfo(null);
     setTokenResult(null);
     setLookupError(null);
+    setPairs([]);
     socketRef.current?.emit('subscribe_chain', { chain });
+  }, []);
+
+  const fetchPairs = useCallback(async (chain: string, address: string): Promise<void> => {
+    setIsFetchingPairs(true);
+    setPairs([]);
+    try {
+      const res = await fetch(`${API_BASE}/api/blockchain/${chain}/token/${address}/pairs`);
+      if (res.ok) {
+        const data = (await res.json()) as DexPairInfo[];
+        setPairs(data);
+      }
+    } catch {
+      // silently ignore — pairs are supplementary
+    } finally {
+      setIsFetchingPairs(false);
+    }
   }, []);
 
   const lookupToken = useCallback(async (chain: string, address: string): Promise<void> => {
     setTokenResult(null);
     setLookupError(null);
+    setPairs([]);
     setIsLookingUp(true);
     try {
       const res = await fetch(`${API_BASE}/api/blockchain/${chain}/token/${address}`);
@@ -59,13 +79,14 @@ export function useBlockchainWs() {
       } else {
         const data = (await res.json()) as TokenInfo;
         setTokenResult(data);
+        void fetchPairs(chain, address);
       }
     } catch (err) {
       setLookupError('Network error — check your connection');
     } finally {
       setIsLookingUp(false);
     }
-  }, []);
+  }, [fetchPairs]);
 
-  return { status, blockInfo, tokenResult, isLookingUp, lookupError, subscribeChain, lookupToken };
+  return { status, blockInfo, tokenResult, pairs, isLookingUp, isFetchingPairs, lookupError, subscribeChain, lookupToken };
 }

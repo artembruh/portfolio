@@ -11,6 +11,19 @@ export interface TokenInfo {
   totalSupply: string; // string to preserve BigInt precision
 }
 
+export interface DexPairInfo {
+  pairAddress: string;
+  dexName: string;
+  url: string;
+  pairType: string | null;
+  quoteToken: { name: string; symbol: string };
+  priceUsd: string;
+  priceNative: string;
+  marketCap: number;
+  liquidityUsd: number;
+  volume24h: number;
+}
+
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
 
 export const SUPPORTED_CHAINS = [
