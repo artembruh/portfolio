@@ -12,10 +12,9 @@ import { Chain } from './chain.enum';
 import { TokenLookupFactory } from './factories/token-lookup.factory';
 import { TokenInfo } from './dto/token-info.dto';
 import { getErrorMessage } from './utils/get-error-message';
+import { validateTokenAddress } from './utils/validate-address';
 
 const CLIENT_ERROR_PATTERNS = [
-  'Invalid EVM address',
-  'Invalid Solana address',
   'Not an ERC-20 token contract',
   'Not an SPL token mint account',
   'Not a valid SPL token mint account',
@@ -34,6 +33,7 @@ export class BlockchainController {
     @Param('chain', new ParseEnumPipe(Chain)) chain: Chain,
     @Param('address') address: string,
   ): Promise<TokenInfo> {
+    validateTokenAddress(chain, address);
     try {
       return await this.tokenLookup.get(chain).getTokenInfo(address);
     } catch (err) {
