@@ -11,5 +11,6 @@ backend/dist
 *.log
 .DS_Store
 .planning
+.superpowers
 docs
 .idea

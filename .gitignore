@@ -7,4 +7,6 @@ dist/
 .DS_Store
 .idea
 .planning/
+.superpowers/
+docs/superpowers/
 package-lock.json
