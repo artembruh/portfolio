@@ -68,7 +68,8 @@ jobs:
             docker tag portfolio-nginx:latest portfolio-nginx:prev 2>/dev/null || true
 
             # Pull and rebuild
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
             docker compose up -d --build --remove-orphans
 
             # Verify deploy (backend port not exposed on host — check via docker exec)
