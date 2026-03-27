@@ -7,7 +7,6 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import { Chain } from './chain.enum';
 import { TokenLookupFactory } from './factories/token-lookup.factory';
 import { DexScreenerService } from './services/dex-screener.service';
@@ -33,7 +32,6 @@ export class BlockchainController {
   ) {}
 
   @Get(':chain/token/:address')
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   async getToken(
     @Param('chain', new ParseEnumPipe(Chain)) chain: Chain,
     @Param('address') address: string,
@@ -54,7 +52,6 @@ export class BlockchainController {
   }
 
   @Get(':chain/token/:address/pairs')
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   async getPairs(
     @Param('chain', new ParseEnumPipe(Chain)) chain: Chain,
     @Param('address') address: string,
