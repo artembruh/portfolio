@@ -53,7 +53,9 @@ export class SolanaBlockSubscriber implements BlockSubscriber {
         .slotNotifications()
         .subscribe({ abortSignal: this.abortController.signal });
       this.logger.log(`[${this.chainName}] Slot subscription active`);
-      for await (const { slot } of slotNotifications) {
+      for await (const notification of slotNotifications) {
+        if (!notification) continue;
+        const { slot } = notification;
         this.reconnect.resetDelay();
         this.blockHistory.push(Number(slot), Date.now());
         for (const cb of this.blockListeners) cb();
